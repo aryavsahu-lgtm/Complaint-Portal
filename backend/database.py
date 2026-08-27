@@ -78,68 +78,51 @@ def _get_mongo_connection():
         logger.info("No MONGO_URI configured; using SQLite fallback immediately.")
         raise ConnectionError("MONGO_URI not configured")
 
-    use_sqlite_fallback = os.getenv('MONGO_USE_SQLITE_FALLBACK', 'true').lower() in {'1','true','yes','on'}
+    use_sqlite_fallback = os.getenv('MONGO_USE_SQLITE_FALLBACK', 'false').lower() in {'1','true','yes','on'}
     if use_sqlite_fallback:
         _mongo_connection_failed = True
-        logger.info("Local/dev fallback enabled; using SQLite immediately.")
+        logger.info("Local/dev SQLite fallback enabled in .env.")
         raise ConnectionError("SQLite fallback enabled")
     
-    timeout_ms = int(os.getenv('MONGO_TIMEOUT_MS', '1000'))
+    timeout_ms = int(os.getenv('MONGO_TIMEOUT_MS', '3000'))
 
-    # Use a single fast MongoDB attempt in local/dev mode.
-    attempts = []
-    
-    # 1. Standard Atlas connection
-    attempts.append(("Standard Atlas", {
-        'serverSelectionTimeoutMS': timeout_ms,
-        'connectTimeoutMS': timeout_ms,
-        'tlsCAFile': certifi.where()
-    }))
-    
-    # 2. Direct Shard fallback (Bypasses SRV/DNS issues common on macOS)
-    if '4l7kqvq' in mongo_uri:
-        shards = "ac-vl4v8yi-shard-00-00.4l7kqvq.mongodb.net:27017,ac-vl4v8yi-shard-00-01.4l7kqvq.mongodb.net:27017,ac-vl4v8yi-shard-00-02.4l7kqvq.mongodb.net:27017"
-        direct_uri = f"mongodb://Admin:Admin123@{shards}/{db_name}?ssl=true&authSource=admin&replicaSet=atlas-vl4v8yi-shard-0"
-        attempts.append(("Direct Shard (Bypass SRV)", {
+    # Connection attempts
+    attempts = [
+        ("Standard Atlas (TLS with Certifi)", {
             'serverSelectionTimeoutMS': timeout_ms,
             'connectTimeoutMS': timeout_ms,
-            'tlsAllowInvalidCertificates': True,
-            'uri_override': direct_uri
-        }))
-    
-    # 3. Aggressive Insecure fallback
-    attempts.append(("Aggressive Insecure", {
-        'serverSelectionTimeoutMS': timeout_ms,
-        'connectTimeoutMS': timeout_ms,
-        'tls': True,
-        'tlsAllowInvalidCertificates': True,
-        'tlsAllowInvalidHostnames': True,
-        'connect': True
-    }))
+            'tlsCAFile': certifi.where()
+        }),
+        ("Standard Atlas (System TLS)", {
+            'serverSelectionTimeoutMS': timeout_ms,
+            'connectTimeoutMS': timeout_ms,
+            'tls': True,
+            'tlsAllowInvalidCertificates': True
+        })
+    ]
 
     last_error = None
     for name, args in attempts:
         try:
-            current_uri = args.pop('uri_override', mongo_uri)
             logger.info(f"Attempting MongoDB connection: {name}")
-            
-            _mongo_client = MongoClient(current_uri, **args)
+            _mongo_client = MongoClient(mongo_uri, **args)
             _mongo_client.admin.command('ping')
             _mongo_db = _mongo_client[db_name]
             logger.info(f"✅ Connected to MongoDB database: {db_name} ({name})")
             return _mongo_db
         except Exception as e:
             msg = str(e)
-            if "TLSV1_ALERT_INTERNAL_ERROR" in msg:
-                logger.error(f"🚨 ALERT: MongoDB Atlas sent an 'Internal Error'. This ALMOST ALWAYS means your cluster is PAUSED or your IP is NOT whitelisted.")
-                logger.error(f"👉 Please go to https://cloud.mongodb.com and ensure your cluster is 'Active' and your IP is in 'Network Access'.")
-            
             logger.warning(f"❌ {name} failed: {e}")
             last_error = e
+            # If credentials are wrong, no need to retry with different TLS configs
+            if "authentication failed" in msg.lower() or "bad auth" in msg.lower() or "auth failed" in msg.lower():
+                logger.error("🚨 MongoDB Authentication Error: The username or password in MONGO_URI does not match your MongoDB Atlas Database User.")
+                logger.error("👉 Please verify Database Access in MongoDB Atlas: https://cloud.mongodb.com")
+                break
             continue
             
     _mongo_connection_failed = True
-    logger.error(f"❌ All connection strategies failed. Last error: {last_error}")
+    logger.error(f"❌ MongoDB connection failed: {last_error}")
     raise last_error
 
 
