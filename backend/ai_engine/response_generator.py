@@ -10,11 +10,15 @@ class ResponseGenerator:
     def __init__(self, lang='en'):
         self.lang = lang
         self.translator = None
-        if lang == 'hi':
-            self.translator = GoogleTranslator(source='en', target='hi')
+        if lang and lang != 'en':
+            try:
+                self.translator = GoogleTranslator(source='en', target=lang)
+            except Exception as e:
+                print(f"[ResponseGen] Could not initialize translator for {lang}: {e}")
+                self.translator = None
 
     def _tr(self, text):
-        """Translates text if language is set to Hindi."""
+        """Translates text if language is set to a non-English language."""
         if self.translator and text:
             try:
                 return self.translator.translate(text)

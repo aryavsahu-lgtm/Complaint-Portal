@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Mukta:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Gujarati:wght@400;600;700&family=Noto+Sans+Gurmukhi:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Malayalam:wght@400;600;700&family=Noto+Sans+Oriya:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap');
 
 html {
     scroll-behavior: smooth;
@@ -27,7 +26,7 @@ html {
 }
 
 body {
-    font-family: 'Poppins', 'Mukta', sans-serif;
+    font-family: 'Poppins', 'Mukta', 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Telugu', 'Noto Sans Tamil', 'Noto Sans Gujarati', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Oriya', 'Noto Sans Gurmukhi', sans-serif;
     background-color: var(--light-bg);
     color: var(--dark-text);
     min-height: 100vh;
@@ -845,4 +844,141 @@ small {
     .location-detail-map {
         height: 220px;
     }
+}
+
+/* ==============================================================================
+   INDIAN MULTI-LANGUAGE SELECTOR & LOCALIZATION STYLES
+   ============================================================================== */
+/* Topbar Font Size Accessibility Controls (A-, A, A+) */
+#fontSizeControls {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    padding: 2px 5px;
+}
+
+.topbar-icon-btn {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    border-radius: 12px;
+    padding: 2px 7px;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.topbar-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    color: #ffd700;
+}
+
+.topbar-icon-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.topbar-icon-btn--reset:hover {
+    transform: rotate(-45deg);
+}
+
+.lang-dropdown-btn {
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #ffffff;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.28) !important;
+}
+
+.lang-dropdown-btn:hover, .lang-dropdown-btn:focus {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.5) !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5) !important;
+}
+
+.lang-dropdown-menu {
+    min-width: 320px;
+    max-width: 380px;
+    max-height: 480px;
+    overflow-y: auto;
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    z-index: 1060;
+}
+
+.lang-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: #212529;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+}
+
+.lang-item-row:hover {
+    background-color: #f1f5f9;
+    color: var(--primary-color);
+}
+
+.lang-item-row.active {
+    background-color: #e0f2fe;
+    color: #0369a1;
+    font-weight: 600;
+}
+
+.lang-native-text {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.lang-region-text {
+    font-size: 0.72rem;
+    color: #64748b;
+}
+
+/* Hide Google Translate top banner / element frame cleanly */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner-frame {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+}
+
+body {
+    top: 0px !important;
+    position: static !important;
+}
+
+.skiptranslate iframe {
+    display: none !important;
+}
+
+.goog-tooltip,
+.goog-tooltip:hover {
+    display: none !important;
+}
+
+.goog-text-highlight {
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+
+#google_translate_element {
+    display: none !important;
 }

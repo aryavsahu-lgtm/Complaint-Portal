@@ -186,13 +186,14 @@ def voice_status():
     if admin_note:
         response_text += f" Our administrator noted: {admin_note}."
 
-    # --- BILINGUAL SUPPORT FOR VOICE STATUS ---
-    if session.get('lang') == 'hi':
+    # --- MULTI-LANGUAGE SUPPORT FOR STATUS & VOICE ---
+    curr_lang = session.get('lang', 'en')
+    if curr_lang and curr_lang != 'en':
         try:
             from deep_translator import GoogleTranslator
-            response_text = GoogleTranslator(source='en', target='hi').translate(response_text)
+            response_text = GoogleTranslator(source='auto', target=curr_lang).translate(response_text)
         except Exception as e:
-            print(f"[VoiceStatus] Translation Error: {e}")
+            print(f"[VoiceStatus] Translation Error for {curr_lang}: {e}")
 
     return jsonify({
         'success': True,

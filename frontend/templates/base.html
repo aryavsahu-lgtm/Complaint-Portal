@@ -24,27 +24,71 @@
     </div>
 
     <div class="top-bar">
-        <div class="container d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-bank2 me-2"></i>
+        <div class="container-fluid px-3 px-md-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center text-nowrap">
+                <i class="bi bi-bank2 me-2 fs-6"></i>
                 <div class="d-flex flex-column">
-                    <span class="fw-bold lh-1">MineGuard Operations</span>
-                    <small class="text-white-50" style="font-size: 0.75rem;">Safety, Environment & Regulatory Control</small>
+                    <span class="fw-bold lh-1 text-nowrap">MineGuard Operations</span>
+                    <small class="text-white-50 text-nowrap" style="font-size: 0.75rem;">Safety, Environment & Regulatory Control</small>
                 </div>
-                <span class="border-start ps-2 ms-2">Coal Mine Governance</span>
+                <span class="border-start ps-2 ms-2 d-none d-md-inline text-nowrap text-white-50">Coal Mine Governance</span>
             </div>
-            <div class="d-flex align-items-center small" style="font-size: 0.95rem;">
-                <div class="me-3 border-end pe-3 d-none d-md-block">
-                    <a href="#main-content" class="text-white text-decoration-none me-2">{{ t.skip_to_content }}</a>
+            <div class="d-flex align-items-center small text-nowrap" style="font-size: 0.88rem;">
+                <div class="me-3 border-end pe-3 d-none d-xl-block text-nowrap">
+                    <a href="#main-content" class="text-white text-decoration-none me-3">{{ t.skip_to_content }}</a>
                     <a href="https://www.nvda-project.org/" target="_blank" class="text-white text-decoration-none"
                         title="Link to Screen Reader information">{{ t.screen_reader }}</a>
                 </div>
-                <div class="language-selector d-flex align-items-center">
-                    <a href="{{ url_for('set_language', lang='en') }}"
-                        class="text-white text-decoration-none {% if session.get('lang', 'en') == 'en' %}fw-bold text-warning{% endif %} me-2">English</a>
-                    <span class="text-white-50">|</span>
-                    <a href="{{ url_for('set_language', lang='hi') }}"
-                        class="text-white text-decoration-none hindi ms-2 {% if session.get('lang') == 'hi' %}fw-bold text-warning{% endif %}">हिन्दी</a>
+
+                <!-- ── Font-size A- / A / A+ controls ── -->
+                <div class="d-flex align-items-center gap-1 me-2" id="fontSizeControls" title="Text size accessibility controls">
+                    <button class="topbar-icon-btn" id="fontDecrBtn" onclick="adjustFontSize(-1)" aria-label="Decrease font size" title="Decrease font size">
+                        <span style="font-size: 0.78rem; font-weight: 700;">A-</span>
+                    </button>
+                    <button class="topbar-icon-btn topbar-icon-btn--reset" id="fontResetBtn" onclick="resetFontSize()" aria-label="Default font size" title="Reset font size">
+                        <span style="font-size: 0.84rem; font-weight: 700;">A</span>
+                    </button>
+                    <button class="topbar-icon-btn" id="fontIncrBtn" onclick="adjustFontSize(1)" aria-label="Increase font size" title="Increase font size">
+                        <span style="font-size: 0.92rem; font-weight: 700;">A+</span>
+                    </button>
+                </div>
+
+                <!-- ── Single consolidated language dropdown ── -->
+                <div class="dropdown language-dropdown position-relative">
+                    <button class="btn btn-sm lang-dropdown-btn dropdown-toggle text-nowrap" type="button" id="languageMenuBtn"
+                            data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false">
+                        <i class="bi bi-globe2 text-warning"></i>
+                        <span class="fw-bold">{{ current_lang_info.native or 'English' }}</span>
+                        <span class="text-white-50 d-none d-sm-inline" style="font-size: 0.72rem;">({{ current_lang_info.code|upper }})</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end lang-dropdown-menu shadow-lg p-2" aria-labelledby="languageMenuBtn">
+                        <div class="px-2 py-1 mb-2 border-bottom">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold small text-primary"><i class="bi bi-globe2 me-1"></i>{{ t.all_languages or 'All 22 Official Indian Languages' }}</span>
+                                <span class="badge bg-warning-subtle text-dark border border-warning" style="font-size: 0.68rem;">8th Schedule</span>
+                            </div>
+                            <div class="input-group input-group-sm mt-1">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                                <input type="text" id="langSearchFilter" class="form-control form-control-sm bg-light border-start-0"
+                                       placeholder="{{ t.search_language or 'Search language...' }}" onkeyup="filterIndianLanguages()">
+                            </div>
+                        </div>
+                        <div class="lang-list-container" id="langListContainer" style="max-height: 280px; overflow-y: auto;">
+                            {% for l in supported_languages %}
+                            <a href="javascript:void(0)" onclick="selectIndianLanguage('{{ l.code }}')"
+                               class="lang-item-row dropdown-item {% if current_lang == l.code %}active{% endif %}"
+                               data-lang-name="{{ l.name|lower }}" data-lang-native="{{ l.native|lower }}">
+                                <div class="d-flex flex-column">
+                                    <span class="lang-native-text">{{ l.native }}</span>
+                                    <span class="lang-region-text">{{ l.name }} &bull; {{ l.region }}</span>
+                                </div>
+                                {% if current_lang == l.code %}
+                                <i class="bi bi-check-circle-fill text-primary"></i>
+                                {% endif %}
+                            </a>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -114,8 +158,8 @@
                             <a class="nav-link py-1 px-2" href="{{ url_for('index') }}">{{ t.home }}</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link py-1 px-2" href="{{ url_for('complaints.submit_complaint') }}">{{
-                                t.file_grievance }}</a>
+                            <a class="nav-link py-1 px-2" href="{{ url_for('complaints.noticeboard') }}">
+                                Noticeboard / Acknowledgements</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link py-1 px-2" href="{{ url_for('complaints.track_complaint') }}">{{
@@ -512,6 +556,105 @@
         }) ();
     </script>
     {% endif %}
+    <!-- Indian Multi-Language Translation System & Google Translate Bridge -->
+    <div id="google_translate_element" style="display:none;" aria-hidden="true"></div>
+    <script type="text/javascript">
+        function googleTranslateElementInit() {
+            try {
+                new google.translate.TranslateElement({
+                    pageLanguage: 'en',
+                    includedLanguages: 'hi,bn,te,mr,ta,gu,ur,kn,or,ml,pa,as,mai,ks,ne,kok,sd,doi,mni,sa,en',
+                    autoDisplay: false,
+                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+                }, 'google_translate_element');
+            } catch (e) {
+                console.warn('[Translate] Init bypassed:', e);
+            }
+        }
+
+        function selectIndianLanguage(langCode) {
+            if (!langCode) return;
+            
+            // 1. Store in cookie for Google Translate (googtrans)
+            const hostname = window.location.hostname;
+            const targetVal = `/en/${langCode}`;
+            
+            if (langCode === 'en') {
+                // Clear translate cookie for clean English view
+                document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; domain=." + hostname + "; path=/;";
+            } else {
+                document.cookie = `googtrans=${targetVal}; path=/;`;
+                if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+                    document.cookie = `googtrans=${targetVal}; domain=.${hostname}; path=/;`;
+                }
+            }
+            localStorage.setItem('mineguard_lang', langCode);
+
+            // 2. Redirect to backend language route to sync session & state
+            window.location.href = '/set_language/' + langCode;
+        }
+
+        function filterIndianLanguages() {
+            const input = document.getElementById('langSearchFilter');
+            if (!input) return;
+            const query = input.value.toLowerCase().trim();
+            const items = document.querySelectorAll('#langListContainer .lang-item-row');
+            items.forEach(function(item) {
+                const name = (item.getAttribute('data-lang-name') || '').toLowerCase();
+                const native = (item.getAttribute('data-lang-native') || '').toLowerCase();
+                const text = item.innerText.toLowerCase();
+                if (!query || name.includes(query) || native.includes(query) || text.includes(query)) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Auto-sync client cookie with active session language on load
+        document.addEventListener('DOMContentLoaded', function () {
+            const activeLang = "{{ current_lang or 'en' }}";
+            if (activeLang && activeLang !== 'en') {
+                const match = document.cookie.match(/(^|;\s*)googtrans=([^;]*)/);
+                const currentCookie = match ? match[2] : null;
+                const expected = `/en/${activeLang}`;
+                if (currentCookie !== expected) {
+                    document.cookie = `googtrans=${expected}; path=/;`;
+                }
+            }
+
+            // ── Font-size: restore saved preference ──
+            const savedStep = parseInt(localStorage.getItem('mineguard_font_step') || '0', 10);
+            if (savedStep !== 0) applyFontStep(savedStep);
+        });
+
+        // ── Font-size adjustment logic ──
+        const FONT_BASE = 16;   // px
+        const FONT_STEP = 2;    // px per click
+        const FONT_MIN  = -3;   // steps below base
+        const FONT_MAX  = 5;    // steps above base
+
+        function applyFontStep(step) {
+            const clampedStep = Math.max(FONT_MIN, Math.min(FONT_MAX, step));
+            const newSize = FONT_BASE + clampedStep * FONT_STEP;
+            document.documentElement.style.fontSize = newSize + 'px';
+            localStorage.setItem('mineguard_font_step', clampedStep);
+            // Visual feedback on buttons
+            document.getElementById('fontDecrBtn').disabled = (clampedStep <= FONT_MIN);
+            document.getElementById('fontIncrBtn').disabled = (clampedStep >= FONT_MAX);
+        }
+
+        function adjustFontSize(delta) {
+            const current = parseInt(localStorage.getItem('mineguard_font_step') || '0', 10);
+            applyFontStep(current + delta);
+        }
+
+        function resetFontSize() {
+            applyFontStep(0);
+        }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
 
     {% block extra_js %}{% endblock %}
 </body>

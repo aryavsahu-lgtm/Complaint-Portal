@@ -26,10 +26,16 @@ try:
     import nltk
     from nltk.tokenize import word_tokenize
     from nltk.corpus import stopwords
-    nltk.download('punkt', quiet=True)
-    nltk.download('stopwords', quiet=True)
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except (LookupError, OSError):
+        nltk.download('punkt', quiet=True)
+    try:
+        nltk.data.find('corpora/stopwords')
+    except (LookupError, OSError):
+        nltk.download('stopwords', quiet=True)
     NLTK_AVAILABLE = True
-except (ImportError, LookupError):
+except Exception:
     NLTK_AVAILABLE = False
 
 

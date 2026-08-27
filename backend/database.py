@@ -28,13 +28,13 @@ _mongo_client = None
 _mongo_db = None
 _sqlite_conn = None
 _mongo_connection_failed = False
-
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def _get_sqlite_connection():
     """Get or create a local SQLite connection for offline/dev use."""
     global _sqlite_conn
     if _sqlite_conn is None:
-        db_path = os.path.join(os.getcwd(), 'complaints.db')
+        db_path = os.path.join(_BASE_DIR, 'complaints.db')
         _sqlite_conn = sqlite3.connect(db_path, check_same_thread=False)
         _sqlite_conn.row_factory = sqlite3.Row
         _sqlite_conn.execute("PRAGMA foreign_keys = ON")

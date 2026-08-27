@@ -18,7 +18,7 @@ from chatbot import chatbot_bp
 from governance import governance_bp
 from database import close_db, init_db
 
-from translations import TRANSLATIONS
+from translations import TRANSLATIONS, SUPPORTED_LANGUAGES, LANGUAGE_MAP, get_translations
 from flask_socketio import SocketIO
 
 # Resolve the backend/ directory (where this file lives)
@@ -49,9 +49,12 @@ app.config['GOOGLE_MAPS_API_KEY'] = GOOGLE_MAPS_API_KEY
 @app.context_processor
 def inject_global_template_vars():
     lang = session.get('lang', 'en')
+    current_lang_meta = LANGUAGE_MAP.get(lang, {'code': 'en', 'name': 'English', 'native': 'English'})
     return {
-        't': TRANSLATIONS.get(lang, TRANSLATIONS['en']),
+        't': get_translations(lang),
         'current_lang': lang,
+        'current_lang_info': current_lang_meta,
+        'supported_languages': SUPPORTED_LANGUAGES,
         'google_maps_api_key': os.getenv('GOOGLE_MAPS_API_KEY', '')
     }
 
@@ -136,7 +139,7 @@ def index():
 
 @app.route('/set_language/<lang>')
 def set_language(lang):
-    if lang in ['en', 'hi']:
+    if lang in LANGUAGE_MAP:
         session['lang'] = lang
     return redirect(request.referrer or url_for('index'))
 

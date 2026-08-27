@@ -48,6 +48,105 @@ def services():
     ]
     return render_template('services.html', services=municipal_services)
 
+
+@complaints_bp.route('/noticeboard')
+def noticeboard():
+    """Noticeboard & Acknowledgements page with DGMS circulars, notices, and system acknowledgements."""
+    notices = [
+        {
+            'id': 'NB-2026-001',
+            'badge': 'DGMS Mandatory',
+            'badge_color': 'danger',
+            'icon': 'bi-exclamation-triangle-fill',
+            'date': '20 Feb 2026',
+            'title': 'CMR 2017 Reg 144: Mandatory Continuous CO & Spontaneous Heating Monitoring',
+            'body': 'All colliery managers are directed to ensure daily tube bundle gas chromatography '
+                    'and handheld sensor scanning across all underground Degree-II and Degree-III seams '
+                    'in compliance with Coal Mines Regulation 2017, Regulation 144.',
+            'reference': 'DGMS/CMR/2026/144',
+            'status': 'Active'
+        },
+        {
+            'id': 'NB-2026-002',
+            'badge': 'MoEF&CC Clearance',
+            'badge_color': 'success',
+            'icon': 'bi-tree-fill',
+            'date': '15 Jan 2026',
+            'title': 'Half-Yearly Environmental Compliance Statement Submission Deadline',
+            'body': 'All mine operators holding Environmental Clearances must upload verified air/water '
+                    'quality test certificates, ground water monitoring reports, and green-belt '
+                    'afforestation progress reports before the quarterly deadline.',
+            'reference': 'MoEFCC/EC/Q1/2026',
+            'status': 'Active'
+        },
+        {
+            'id': 'NB-2026-003',
+            'badge': 'Labour Safety',
+            'badge_color': 'warning',
+            'icon': 'bi-person-badge-fill',
+            'date': '10 Jan 2026',
+            'title': 'Mines Rules 1955: 100% Form O PME Health Screenings for Contract Workers',
+            'body': 'Ensure all contractual overburden truck operators, drillers and blasters '
+                    'complete triennial periodic medical examinations (Form O) and Vocational Safety '
+                    'Training (VTC) before deployment on active mining faces.',
+            'reference': 'DGMSLab/MR1955/PME/2026',
+            'status': 'Active'
+        },
+        {
+            'id': 'NB-2025-014',
+            'badge': 'Mine Safety',
+            'badge_color': 'primary',
+            'icon': 'bi-shield-fill-check',
+            'date': '28 Nov 2025',
+            'title': 'Implementation of SCAMP Strata Support Plan across all Underground Seams',
+            'body': 'All mine managers are directed to submit updated Strata Control Action and Management '
+                    'Plans (SCAMP) for each active underground face within 30 days. Non-compliance will '
+                    'attract action under Section 22 of the Mines Act 1952.',
+            'reference': 'DGMS/SCAMP/2025/022',
+            'status': 'Acknowledged'
+        },
+        {
+            'id': 'NB-2025-009',
+            'badge': 'Digital India',
+            'badge_color': 'info',
+            'icon': 'bi-pc-display-horizontal',
+            'date': '05 Sep 2025',
+            'title': 'MineGuard Portal Launched — Digital Complaint & Compliance Management System',
+            'body': 'The Ministry of Coal, in association with DGMS and NIC, has officially launched the '
+                    'MineGuard AI-enabled compliance and complaint management portal. All subsidiaries of '
+                    'Coal India Limited are required to onboard by Q4 2025.',
+            'reference': 'MoC/DIG/MineGuard/2025',
+            'status': 'Acknowledged'
+        },
+    ]
+    acknowledgements = [
+        {
+            'icon': 'bi-flag-fill',
+            'color': 'text-saffron',
+            'title': 'Government of India',
+            'body': 'Ministry of Coal & Directorate General of Mines Safety (DGMS)'
+        },
+        {
+            'icon': 'bi-pc-display-horizontal',
+            'color': 'text-primary',
+            'title': 'National Informatics Centre (NIC)',
+            'body': 'Platform design, cloud hosting & Digital India integration'
+        },
+        {
+            'icon': 'bi-tree',
+            'color': 'text-success',
+            'title': 'MoEF&CC',
+            'body': 'Ministry of Environment, Forest and Climate Change — Environmental Compliance Framework'
+        },
+        {
+            'icon': 'bi-people-fill',
+            'color': 'text-warning',
+            'title': 'Coal India Limited (CIL) & Subsidiaries',
+            'body': 'SECL, CCL, WCL, ECL, NCL, BCCL, MCL, NEC — Field operations and compliance data'
+        },
+    ]
+    return render_template('noticeboard.html', notices=notices, acknowledgements=acknowledgements)
+
 @complaints_bp.route('/track', methods=['GET', 'POST'])
 def track_complaint():
     complaint = None
