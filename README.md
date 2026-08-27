@@ -50,3 +50,4 @@ MineGuard enables workers and site teams to report safety incidents, operational
 - `PROJECT_STRUCTURE.md`: Detailed explanation of the modular code structure.
 - `DEMO_WALKTHROUGH.md`: Step-by-step guide for presenting the project.
 - `VIVA_GUIDE.md`: Common questions and answers for your viva.
+# Complaint-Portal
