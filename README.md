@@ -52,3 +52,4 @@ MineGuard enables workers and site teams to report safety incidents, operational
 - `VIVA_GUIDE.md`: Common questions and answers for your viva.
 # Complaint-Portal
 # Complaint-Portal
+# Coal-Mine
