@@ -4,8 +4,8 @@
 
 {% block content %}
 <!-- Full Width Hero Section outside the container constrained grid for maximum impact -->
-<div class="hero-section text-center">
-    <div class="container-fluid px-xxl-5 px-xl-4 px-lg-3 px-2 py-5">
+<div class="hero-section text-center py-5">
+    <div class="container-fluid px-xxl-5 px-xl-4 px-lg-3 px-2">
         <div class="row align-items-center justify-content-center g-3">
             <!-- Left: Hon'ble Prime Minister -->
             <div class="col-xl-2 col-lg-3 col-md-3 text-center d-none d-md-flex justify-content-center animate__animated animate__fadeInLeft">
@@ -92,12 +92,12 @@
                     </div>
                 </div>
             </div>
+        </div>
     </div>
-</div>
 
-<!-- Content Section (visible after scrolling) -->
-<section class="py-5" style="background: #f4f7fb;">
-    <div class="container">
+    <div class="container mt-n5 position-relative" style="z-index: 10;">
+
+
 
         <!-- Operational Risk Register + Compliance Programs -->
         <div class="row mb-5 align-items-stretch">
@@ -419,5 +419,5 @@
             </div>
         </div>
     </div>
-</section>
+</div>
 {% endblock %}
