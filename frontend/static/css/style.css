@@ -257,14 +257,15 @@ h3,
     position: relative;
     background: linear-gradient(135deg, #002147 0%, #003d6b 50%, #004d8a 100%);
     color: white;
-    padding: 0;
+    min-height: calc(100vh - 145px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5rem 0;
     margin-bottom: 0;
     border-bottom: 5px solid var(--accent-color);
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     overflow: hidden;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
 }
 
 .hero-section::before {
