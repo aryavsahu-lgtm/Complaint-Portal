@@ -10,17 +10,17 @@
             <!-- Left: Hon'ble Prime Minister -->
             <div class="col-xl-2 col-lg-3 col-md-3 text-center d-none d-md-flex justify-content-center animate__animated animate__fadeInLeft">
                 <div class="hover-scale" style="width: 185px; max-width: 100%;">
-                    <div class="bg-white p-2 rounded-3 shadow-lg w-100">
+                    <div class="bg-white p-2 rounded-3 shadow-lg border border-2 border-white w-100">
                         <div style="width: 100%; height: 215px; overflow: hidden; border-radius: 0.4rem;">
                             <img src="{{ url_for('static', filename='images/pm_narendra_modi.jpg') }}?v=6"
                                 alt="{{ t.pm_name }}"
                                 style="width: 100%; height: 100%; object-fit: cover; object-position: center top;">
                         </div>
-                    </div>
-                    <div class="mt-2 bg-white rounded-3 py-2 px-2 shadow-sm border-start border-4 border-warning text-center w-100">
-                        <h5 class="fw-bold text-primary mb-1 text-nowrap" style="font-size: 0.88rem; line-height: 1.2;">{{ t.pm_name }}</h5>
-                        <small class="text-uppercase fw-bold text-muted text-nowrap d-block"
-                            style="font-size: 0.60rem; letter-spacing: 0.4px;">{{ t.pm_title }}</small>
+                        <div class="mt-2 pt-2 border-top border-2 border-warning text-center w-100">
+                            <h5 class="fw-bold text-primary mb-1 text-nowrap" style="font-size: 0.88rem; line-height: 1.2;">{{ t.pm_name }}</h5>
+                            <small class="text-uppercase fw-bold text-muted text-nowrap d-block"
+                                style="font-size: 0.60rem; letter-spacing: 0.4px;">{{ t.pm_title }}</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -78,17 +78,17 @@
             <!-- Right: Hon'ble Minister of Coal -->
             <div class="col-xl-2 col-lg-3 col-md-3 text-center d-none d-md-flex justify-content-center animate__animated animate__fadeInRight">
                 <div class="hover-scale" style="width: 185px; max-width: 100%;">
-                    <div class="bg-white p-2 rounded-3 shadow-lg w-100">
+                    <div class="bg-white p-2 rounded-3 shadow-lg border border-2 border-white w-100">
                         <div style="width: 100%; height: 215px; overflow: hidden; border-radius: 0.4rem;">
                             <img src="{{ url_for('static', filename='images/coal_minister_kishan_reddy.jpg') }}?v=6"
                                 alt="{{ t.coal_minister_name }}"
                                 style="width: 100%; height: 100%; object-fit: cover; object-position: center top;">
                         </div>
-                    </div>
-                    <div class="mt-2 bg-white rounded-3 py-2 px-2 shadow-sm border-start border-4 border-warning text-center w-100">
-                        <h5 class="fw-bold text-primary mb-1 text-nowrap" style="font-size: 0.88rem; line-height: 1.2;">{{ t.coal_minister_name }}</h5>
-                        <small class="text-uppercase fw-bold text-muted text-nowrap d-block"
-                            style="font-size: 0.60rem; letter-spacing: 0.4px;">{{ t.coal_minister_title }}</small>
+                        <div class="mt-2 pt-2 border-top border-2 border-warning text-center w-100">
+                            <h5 class="fw-bold text-primary mb-1 text-nowrap" style="font-size: 0.88rem; line-height: 1.2;">{{ t.coal_minister_name }}</h5>
+                            <small class="text-uppercase fw-bold text-muted text-nowrap d-block"
+                                style="font-size: 0.60rem; letter-spacing: 0.4px;">{{ t.coal_minister_title }}</small>
+                        </div>
                     </div>
                 </div>
             </div>
