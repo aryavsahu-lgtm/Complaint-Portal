@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.citizen_registration }} - {{ t.portal_name }}{% endblock %}
+
+{% block content %}
+<div class="auth-wrapper">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card auth-card shadow-lg">
+                    <div class="auth-header">
+                        <i class="bi bi-person-plus-fill text-white"></i>
+                        <h3 class="mb-0 fw-bold">{{ t.citizen_registration }}</h3>
+                        <p class="text-white-50 mb-0">{{ t.portal_name }}</p>
+                    </div>
+
+                    <div class="card-body auth-body p-4 p-md-5">
+                        <form method="POST" action="{{ url_for('auth.register') }}">
+                            <div class="mb-3">
+                                <label for="username" class="form-label text-muted fw-bold">{{ t.username_email }}</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i
+                                            class="bi bi-person"></i></span>
+                                    <input type="text" class="form-control border-start-0 ps-0 bg-light" id="username"
+                                        name="username" placeholder="{{ t.enter_username }}" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="email" class="form-label text-muted fw-bold">{{ t.email_address }}</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i
+                                            class="bi bi-envelope"></i></span>
+                                    <input type="email" class="form-control border-start-0 ps-0 bg-light" id="email"
+                                        name="email" placeholder="name@domain.gov.in" required>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="password" class="form-label text-muted fw-bold">{{ t.password }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0"><i
+                                                class="bi bi-lock"></i></span>
+                                        <input type="password" class="form-control border-start-0 ps-0 bg-light"
+                                            id="password" name="password" placeholder="{{ t.enter_password }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="confirm_password" class="form-label text-muted fw-bold">{{ t.confirm_password }}</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0"><i
+                                                class="bi bi-check2-circle"></i></span>
+                                        <input type="password" class="form-control border-start-0 ps-0 bg-light"
+                                            id="confirm_password" name="confirm_password" placeholder="{{ t.confirm_password }}"
+                                            required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid mb-4">
+                                <button type="submit" class="btn btn-primary btn-lg shadow-sm">
+                                    {{ t.register }} <i class="bi bi-arrow-right-short"></i>
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="text-center">
+                            <p class="text-muted mb-0">{{ t.already_have_account }} <a href="{{ url_for('auth.login') }}"
+                                    class="text-primary fw-bold text-decoration-none">{{ t.login_here }}</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Mine Control Areas - MineGuard Compliance Command{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Hero Section -->
+    <div class="row mb-5 align-items-center">
+        <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-3" style="color: var(--primary-color);">Mine Control Areas</h1>
+                <p class="lead text-muted">Safety, operations, environment, welfare, and regulatory teams working from one accountable case system.</p>
+            <div class="d-flex gap-3 mt-4">
+                <div class="d-flex align-items-center">
+                    <div class="icon-shape bg-primary text-white rounded-circle p-2 me-2">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <span class="small fw-bold">Integrated Governance</span>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="icon-shape bg-success text-white rounded-circle p-2 me-2">
+                        <i class="bi bi-lightning-charge"></i>
+                    </div>
+                    <span class="small fw-bold">Rapid Response</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mt-4 mt-lg-0">
+            <img src="https://images.unsplash.com/photo-1521747116042-5a810fda9664?auto=format&fit=crop&w=1200&q=80"
+                class="img-fluid rounded-4 shadow-lg border" alt="Government Building">
+        </div>
+    </div>
+
+    <!-- Departments Grid -->
+    <div class="row g-4">
+        {% for dept in departments %}
+        {% set name_key = dept.id + '_name' %}
+        {% set desc_key = dept.id + '_desc' %}
+        {% set work_key = dept.id + '_work' %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm card-hover-effect overflow-hidden rounded-4">
+                <div class="position-relative">
+                    {% if 'http' in dept.image %}
+                    <img src="{{ dept.image }}" class="card-img-top" style="height: 200px; object-fit: cover;"
+                        alt="{{ t[name_key] }}">
+                    {% else %}
+                    <img src="{{ url_for('static', filename=dept.image) }}" class="card-img-top"
+                        style="height: 200px; object-fit: cover;" alt="{{ t[name_key] }}">
+                    {% endif %}
+                    <div class="position-absolute top-0 end-0 p-3">
+                        <span class="badge bg-white text-primary rounded-pill shadow-sm py-2 px-3">
+                            <i class="bi {{ dept.icon }} me-1"></i> {{ t[name_key] }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">{{ t[name_key] }}</h5>
+                    <p class="text-muted small mb-4">{{ t[desc_key] }}</p>
+                    <h6 class="small fw-bold text-uppercase border-bottom pb-2 mb-3">Accountable Responsibilities:</h6>
+                    <ul class="list-unstyled mb-0">
+                        {% for work in t[work_key].split(',') %}
+                        <li class="small mb-2 d-flex align-items-start">
+                            <i class="bi bi-check2-circle text-success me-2 mt-1"></i>
+                            <span>{{ work.strip() }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="card-footer bg-white border-0 p-4 pt-0">
+                    <a href="{{ url_for('complaints.submit_complaint') }}"
+                        class="btn btn-outline-primary btn-sm w-100 rounded-pill">
+                        {{ t.file_complaint_now }}
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Call to Action -->
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <div class="p-5 bg-light rounded-4 border">
+                <h3 class="fw-bold mb-3">Can't find what you're looking for?</h3>
+                <p class="text-muted mb-4">Our AI Helpdesk can assist you in identifying the right department for your
+                    specific issue.</p>
+                <a href="{{ url_for('chatbot.chatbot_page') }}" class="btn btn-primary btn-lg px-5 shadow-sm">
+                    <i class="bi bi-robot me-2"></i> Open AI Helpdesk
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-hover-effect {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card-hover-effect:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .icon-shape {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .bg-light-trans {
+        background-color: rgba(0, 0, 0, 0.05);
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %}CAPA Resolution & Action Plan Manager | MineGuard CoalGov{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('governance.dashboard') }}" class="text-decoration-none text-muted small">
+                    <i class="bi bi-arrow-left me-1"></i> Command Center
+                </a>
+                <span class="text-muted">/</span>
+                <span class="badge bg-success">CAPA Action Lifecycle</span>
+            </div>
+            <h2 class="fw-bold text-dark mb-0">Corrective & Preventive Action (CAPA) Manager</h2>
+            <p class="text-muted mb-0">Track root cause investigations, engineering mitigations, responsible personnel, and verifiable close-outs.</p>
+        </div>
+    </div>
+
+    <!-- CAPA Status Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 border-start border-primary border-4 p-3">
+                <div class="text-muted small fw-bold text-uppercase">Total Active CAPAs</div>
+                <h3 class="fw-bold text-primary mb-0 mt-1">{{ capas|length }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 border-start border-warning border-4 p-3">
+                <div class="text-muted small fw-bold text-uppercase">In Progress / Mitigating</div>
+                <h3 class="fw-bold text-warning mb-0 mt-1">{{ capas|selectattr('status', 'equalto', 'In Progress')|list|length }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 border-start border-info border-4 p-3">
+                <div class="text-muted small fw-bold text-uppercase">Verification Required</div>
+                <h3 class="fw-bold text-info mb-0 mt-1">{{ capas|selectattr('status', 'equalto', 'Verification Required')|list|length }}</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0 border-start border-success border-4 p-3">
+                <div class="text-muted small fw-bold text-uppercase">Closed & Signed Off</div>
+                <h3 class="fw-bold text-success mb-0 mt-1">{{ capas|selectattr('status', 'equalto', 'Closed')|list|length }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- CAPA Action Cards Grid -->
+    <div class="row g-4">
+        {% for capa in capas %}
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="badge {% if capa.status == 'Closed' %}bg-success{% elif capa.status == 'Verification Required' %}bg-info{% else %}bg-warning text-dark{% endif %} me-2">
+                            {{ capa.status }}
+                        </span>
+                        <span class="small text-muted fw-bold font-monospace">CAPA #{{ capa.id }}</span>
+                    </div>
+                    <span class="small text-muted"><i class="bi bi-calendar me-1"></i>Due: <strong>{{ capa.target_date }}</strong></span>
+                </div>
+                
+                <div class="card-body">
+                    <h5 class="fw-bold text-dark mb-2">{{ capa.title }}</h5>
+                    <div class="small text-muted mb-3">
+                        <i class="bi bi-building me-1"></i><strong>{{ capa.mine_name }}</strong> ({{ capa.subsidiary }})
+                        {% if capa.location_pit_seam %} | <i class="bi bi-geo me-1"></i>{{ capa.location_pit_seam }}{% endif %}
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 mb-3">
+                        <div class="mb-2">
+                            <span class="small fw-bold text-danger text-uppercase"><i class="bi bi-search me-1"></i>Root Cause Analysis:</span>
+                            <div class="small text-dark mt-1">{{ capa.root_cause or 'Under scientific engineering investigation.' }}</div>
+                        </div>
+                        <div class="mb-2">
+                            <span class="small fw-bold text-primary text-uppercase"><i class="bi bi-tools me-1"></i>Corrective Action Plan:</span>
+                            <div class="small text-dark mt-1">{{ capa.corrective_action or 'Action plan formulated.' }}</div>
+                        </div>
+                        <div>
+                            <span class="small fw-bold text-success text-uppercase"><i class="bi bi-shield-check me-1"></i>Preventive Measures:</span>
+                            <div class="small text-dark mt-1">{{ capa.preventive_action or 'Standard operating procedures updated.' }}</div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center small text-muted">
+                        <div><i class="bi bi-person-gear me-1"></i>Assigned: <strong>{{ capa.assigned_engineer }}</strong></div>
+                        {% if capa.sign_off_by %}
+                        <div class="text-success"><i class="bi bi-check-all me-1"></i>Signed off by: <strong>{{ capa.sign_off_by }}</strong></div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card-footer bg-light d-flex justify-content-end p-3">
+                    <button type="button" class="btn btn-primary btn-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#editCapaModal{{ capa.id }}">
+                        <i class="bi bi-pencil-square me-1"></i> Update & Sign Off
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal: Edit CAPA -->
+        <div class="modal fade" id="editCapaModal{{ capa.id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form method="POST" action="{{ url_for('governance.update_capa', capa_id=capa.id) }}">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title fw-bold">Update & Sign Off CAPA #{{ capa.id }}</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label small fw-bold">Action Plan Title</label>
+                                    <input type="text" class="form-control" value="{{ capa.title }}" disabled>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Lifecycle Status</label>
+                                    <select name="status" class="form-select">
+                                        <option value="In Progress" {% if capa.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                        <option value="Verification Required" {% if capa.status == 'Verification Required' %}selected{% endif %}>Verification Required</option>
+                                        <option value="Closed" {% if capa.status == 'Closed' %}selected{% endif %}>Closed & Signed Off</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold">Root Cause Analysis (5-Why / Fishbone)</label>
+                                    <textarea name="root_cause" class="form-control" rows="2">{{ capa.root_cause }}</textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold">Immediate Corrective Action</label>
+                                    <textarea name="corrective_action" class="form-control" rows="2">{{ capa.corrective_action }}</textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small fw-bold">Long-term Preventive Measure</label>
+                                    <textarea name="preventive_action" class="form-control" rows="2">{{ capa.preventive_action }}</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Assigned Responsible Engineer</label>
+                                    <input type="text" name="assigned_engineer" class="form-control" value="{{ capa.assigned_engineer }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Digital Sign-off Authority (Name & Designation)</label>
+                                    <input type="text" name="sign_off_by" class="form-control" value="{{ capa.sign_off_by or session.get('username', 'Colliery Safety Officer') }}" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success fw-semibold">
+                                <i class="bi bi-shield-check me-1"></i> Save & Record to SHA-256 Ledger
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

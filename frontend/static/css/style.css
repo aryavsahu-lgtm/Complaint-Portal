@@ -1,0 +1,848 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Mukta:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
+
+html {
+    scroll-behavior: smooth;
+}
+
+:root {
+    --primary-color: #003366;
+    /* Official Government Deep Blue */
+    --secondary-color: #53565A;
+    --accent-color: #FF9933;
+    /* Saffron Accent */
+    --success-color: #138808;
+    /* Official Green */
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-bg: #ffffff;
+    --dark-text: #212529;
+    --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    --hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --navbar-bg: #ffffff;
+    --navbar-text: #003366;
+    --saffron: #FF9933;
+    --white: #FFFFFF;
+    --green: #138808;
+}
+
+body {
+    font-family: 'Poppins', 'Mukta', sans-serif;
+    background-color: var(--light-bg);
+    color: var(--dark-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.hindi {
+    font-family: 'Mukta', sans-serif;
+    font-weight: 500;
+}
+
+h1,
+h2,
+h3,
+.navbar-brand {
+    font-family: 'Playfair Display', serif;
+    /* Serif font for headings for academic look */
+}
+
+/* Add Top Bar */
+.top-bar {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.5rem 0;
+    font-size: 0.85rem;
+}
+
+.top-bar a {
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.top-bar a:hover {
+    color: var(--warning-color) !important;
+    border-bottom: 2px solid var(--warning-color);
+}
+
+.top-bar a.text-warning {
+    color: var(--warning-color) !important;
+}
+
+/* Navbar Styling */
+.navbar {
+    background-color: var(--navbar-bg) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 0.5rem 0;
+    border-bottom: 4px solid var(--accent-color);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    color: var(--primary-color) !important;
+    max-width: none;
+    flex-shrink: 0;
+}
+
+.navbar-brand img {
+    flex-shrink: 0;
+}
+
+.brand-text {
+    overflow: hidden;
+    min-width: 0;
+}
+
+.navbar-nav {
+    gap: 0.5rem;
+}
+
+.nav-link {
+    color: var(--navbar-text) !important;
+    font-weight: 600;
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    padding: 0.4rem 0.75rem !important;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    border-radius: 6px;
+    position: relative;
+}
+
+/* Underline sweep — skip buttons */
+.nav-link:not(.btn)::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 70%;
+    height: 2px;
+    background: var(--accent-color);
+    border-radius: 2px;
+    transition: transform 0.25s ease;
+}
+
+/* Pill hover — only plain nav-links, NOT .btn wrappers */
+.nav-link:not(.btn):hover,
+.nav-link:not(.btn).active {
+    color: var(--primary-color) !important;
+    background-color: rgba(0, 56, 117, 0.08);
+    box-shadow: 0 2px 8px rgba(0, 56, 117, 0.12);
+    transform: translateY(-1px);
+}
+
+.nav-link:not(.btn):hover::after,
+.nav-link:not(.btn).active::after {
+    transform: translateX(-50%) scaleX(1);
+}
+
+/* Login dropdown-toggle: keep Bootstrap btn-outline-primary hover (white text on navy bg) */
+.navbar .btn-outline-primary.nav-link:hover,
+.navbar .btn-outline-primary.nav-link:focus {
+    color: #ffffff !important;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 56, 117, 0.3);
+}
+
+.nav-link i {
+    margin-right: 5px;
+    transition: transform 0.2s ease;
+}
+
+.nav-link:hover i {
+    transform: scale(1.15);
+}
+
+/* Navbar buttons */
+.navbar .btn-sm {
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+    font-weight: 600;
+}
+
+.navbar .badge {
+    font-size: 0.75rem;
+    padding: 0.4em 0.7em;
+}
+
+/* Login Dropdown Styling */
+.navbar .dropdown-menu {
+    border-radius: 12px;
+    padding: 0.5rem;
+    min-width: 200px;
+    margin-top: 10px !important;
+}
+
+.navbar .dropdown-item {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.navbar .dropdown-item:hover {
+    background-color: var(--light-color);
+    transform: translateX(5px);
+}
+
+.navbar .dropdown-toggle::after {
+    vertical-align: middle;
+    margin-left: 0.5rem;
+}
+
+/* Ensure navbar items don't overflow */
+@media (min-width: 992px) {
+    .navbar-collapse {
+        flex-wrap: nowrap;
+    }
+
+    .navbar-nav {
+        flex-wrap: nowrap;
+    }
+
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+/* Better responsive navbar */
+@media (max-width: 1400px) {
+    .navbar-brand {
+        max-width: 28%;
+    }
+
+    .nav-link {
+        padding: 0.5rem 0.5rem !important;
+        font-size: 0.75rem;
+    }
+
+    .navbar .btn-sm {
+        padding: 0.3rem 0.6rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 1200px) {
+    .navbar-brand {
+        max-width: 30%;
+        font-size: 1.5rem;
+    }
+
+    .nav-link {
+        padding: 0.5rem 0.4rem !important;
+        font-size: 0.7rem;
+    }
+
+    .navbar .btn-sm {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .navbar-brand {
+        max-width: 60%;
+    }
+}
+
+
+/* Hero Section */
+.hero-section {
+    position: relative;
+    background: linear-gradient(135deg, #002147 0%, #003d6b 50%, #004d8a 100%);
+    color: white;
+    padding: 3.5rem 0 4.5rem 0;
+    margin-bottom: 3rem;
+    border-bottom: 5px solid var(--accent-color);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.1) 100%);
+    pointer-events: none;
+}
+
+.brand-text {
+    line-height: 1.2;
+}
+
+.govt-name {
+    font-family: 'Poppins', sans-serif;
+    letter-spacing: 2px;
+}
+
+.portal-name {
+    font-family: 'Playfair Display', serif;
+    letter-spacing: 0.5px;
+}
+
+.hero-title {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    color: white;
+    letter-spacing: -1px;
+}
+
+.hero-subtitle {
+    font-size: 1.5rem;
+    font-weight: 300;
+    margin-bottom: 2.5rem;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    padding: 0;
+}
+
+/* Cards */
+.card {
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    box-shadow: var(--card-shadow);
+    background-color: #ffffff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    overflow: hidden;
+    border-top: 3px solid var(--accent-color);
+}
+
+.card-header {
+    background-color: #ffffff;
+    border-bottom: 2px solid #f0f0f0;
+    padding: 1.25rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.card:hover {
+    box-shadow: var(--hover-shadow);
+    transform: translateY(-5px);
+}
+
+/* Auth Pages */
+.auth-wrapper {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f8f9fa;
+    padding: 2rem 0;
+}
+
+.auth-card {
+    width: 100%;
+    margin: 0 auto;
+    border-top: none;
+}
+
+.auth-header {
+    background: var(--primary-color);
+    color: white;
+    padding: 2rem;
+    text-align: center;
+    border-radius: 4px 4px 0 0;
+    border-bottom: 3px solid var(--accent-color);
+}
+
+.auth-header i {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    color: var(--accent-color);
+    display: block;
+}
+
+.auth-body {
+    padding: 2rem;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    padding: 0.6rem 1.5rem;
+    font-weight: 500;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
+
+.btn-primary:hover {
+    background-color: #001633;
+    border-color: #001633;
+    transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Status Badges */
+.badge {
+    padding: 0.5em 0.8em;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+.status-pending {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.status-in-progress {
+    background-color: #cff4fc;
+    color: #055160;
+    border: 1px solid #b6effb;
+}
+
+.status-resolved {
+    background-color: #d1e7dd;
+    color: #0f5132;
+    border: 1px solid #c3e6cb;
+}
+
+/* Priority Badges */
+.badge-priority-low {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #d6d8db;
+}
+
+.badge-priority-medium {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
+}
+
+.badge-priority-high {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+/* Footer */
+.footer {
+    background-color: var(--primary-color);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 3rem 0;
+    margin-top: auto;
+    font-size: 0.9rem;
+    border-top: 5px solid var(--accent-color);
+}
+
+.footer h5 {
+    color: var(--accent-color);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+}
+
+.footer a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.footer a:hover {
+    color: var(--accent-color);
+}
+
+/* Animation */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Helpers */
+.text-primary {
+    color: var(--primary-color) !important;
+}
+
+.text-accent {
+    color: var(--accent-color) !important;
+}
+
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+.grayscale {
+    filter: grayscale(100%);
+    transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+.grayscale:hover {
+    filter: grayscale(0%);
+    opacity: 1 !important;
+}
+
+/* Admin Dashboard Utilities */
+.icon-shape {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.card:hover .icon-shape {
+    transform: scale(1.1);
+}
+
+/* AI Alert Animations */
+@keyframes pulse-red {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.3);
+        opacity: 0.7;
+        color: #ff0000;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.footer a i {
+    transition: transform 0.3s ease;
+    display: inline-block;
+}
+
+.footer a:hover i {
+    transform: translateX(3px);
+}
+
+.footer .bi-telephone-outbound-fill.transition:hover {
+    transform: scale(1.1);
+}
+
+.status-badge {
+    transition: all 0.3s ease;
+}
+
+/* AI Section Utilities */
+.hover-elevate {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hover-elevate:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15) !important;
+}
+
+.transition-all {
+    transition: all 0.3s ease;
+}
+
+.feature-icon {
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+/* Fix for better text visibility and alignment */
+.card-body h4,
+.card-body h5,
+.card-body h6 {
+    color: var(--dark-text);
+    font-weight: 600;
+}
+
+.card-body p,
+.card-body small {
+    color: #6c757d;
+    line-height: 1.6;
+}
+
+/* Improve white text visibility on colored backgrounds */
+.bg-primary .card-body,
+.bg-success .card-body,
+.bg-info .card-body,
+.bg-warning .card-body {
+    color: white !important;
+}
+
+.bg-warning .card-body {
+    color: #212529 !important;
+}
+
+/* Better text contrast for stat cards */
+.text-white-50 {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.text-dark-50 {
+    color: rgba(33, 37, 41, 0.75) !important;
+}
+
+/* Improve Hindi text visibility */
+.hindi {
+    font-family: 'Mukta', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+/* Better alignment for feature cards */
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.stat-card h4,
+.stat-card h5 {
+    margin-bottom: 0.75rem;
+    font-weight: 700;
+}
+
+/* Improve list item visibility */
+.list-group-item {
+    border-color: rgba(0, 0, 0, 0.05) !important;
+}
+
+.list-group-item .fw-bold {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.list-group-item small {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Better card header visibility */
+.card-header {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* Improve badge visibility */
+.badge {
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.5em 0.9em;
+}
+
+/* Fix container alignment */
+.container {
+    max-width: 1200px;
+}
+
+/* Better spacing for sections */
+.mb-5 {
+    margin-bottom: 3rem !important;
+}
+
+/* Improve display numbers visibility */
+.display-4 {
+    font-weight: 800;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Better text alignment in cards */
+.text-center {
+    text-align: center !important;
+}
+
+.text-start {
+    text-align: left !important;
+}
+
+/* Improve small text readability */
+small {
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+/* Fix for white text on light backgrounds */
+.bg-white h4,
+.bg-white h5,
+.bg-white h6,
+.bg-white p {
+    color: var(--dark-text) !important;
+}
+
+/* Better hover states */
+.hover-scale {
+    transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+    transform: scale(1.02);
+}
+
+/* Stat card specific text visibility */
+.stat-card .bg-white h4 {
+    color: #212529 !important;
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+.stat-card .bg-white h5 {
+    color: var(--primary-color) !important;
+    font-weight: 600;
+}
+
+.stat-card .bg-white p {
+    color: #6c757d !important;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* Ensure proper text color in all card contexts */
+.card .bg-white * {
+    color: inherit;
+}
+
+.card .bg-white h4,
+.card .bg-white h5,
+.card .bg-white h6 {
+    color: #212529 !important;
+}
+
+.card .bg-white p,
+.card .bg-white small {
+    color: #6c757d !important;
+}
+
+.card .bg-white .text-primary {
+    color: var(--primary-color) !important;
+}
+
+.card .bg-white .text-muted {
+    color: #6c757d !important;
+}
+
+/* Animations */
+@keyframes pulse-red {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+    }
+}
+
+.pulse-animation {
+    animation: pulse-red 1.5s infinite;
+}
+
+/* ==========================================================================
+   Google Maps & Exact Location Picker Styles
+   ========================================================================== */
+.pac-container {
+    z-index: 1065 !important; /* Ensure Autocomplete appears above Bootstrap modals */
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    border: 1px solid #dee2e6;
+    font-family: inherit;
+}
+
+.pac-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.pac-item:hover, .pac-item-selected {
+    background-color: #f0f7ff;
+}
+
+.pac-item-query {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.location-picker-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.location-map-container {
+    width: 100%;
+    height: 320px;
+    min-height: 250px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #dee2e6;
+}
+
+.location-detail-map {
+    width: 100%;
+    height: 280px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+}
+
+.coordinate-badge {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.82rem;
+    font-family: monospace;
+    color: #475569;
+}
+
+@media (max-width: 576px) {
+    .location-map-container {
+        height: 240px;
+    }
+    .location-detail-map {
+        height: 220px;
+    }
+}

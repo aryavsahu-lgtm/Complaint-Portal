@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.ai_seva_assistant }} - {{ t.portal_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
+<style>
+    /* Overlay for the chatbot page to keep it centered when not floating if needed */
+    .chatbot-page-wrapper {
+        min-height: calc(100vh - 400px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: #f0f2f5;
+        padding: 40px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chatbot-page-wrapper">
+    <div class="chat-container">
+        <!-- Chat Header -->
+        <div class="chat-header">
+            <div class="bot-avatar-large">
+                <img src="{{ url_for('static', filename='images/ministry_of_coal_logo.svg') }}"
+                    alt="Ministry of Coal Seal" style="height: 32px; width: auto;">
+            </div>
+            <div>
+                <h4>{{ t.ai_seva_assistant }}</h4>
+                <small>{{ t.portal_name }}</small>
+            </div>
+            <div class="ms-auto">
+                <button class="btn btn-sm text-white" onclick="resetChat()" title="Reset Conversation">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="bot-avatar"><i class="bi bi-robot"></i></div>
+                <div class="message-wrapper">
+                    <div class="message-bubble">
+                        {{ t.chatbot_welcome | safe }}
+                    </div>
+                    <div class="message-time">Just now</div>
+                    <div class="suggestions">
+                        <div class="suggestion-chip" onclick="sendSuggestion('{{ t.chatbot_serv_1 }}')">{{
+                            t.chatbot_serv_1 }}</div>
+                        <div class="suggestion-chip" onclick="sendSuggestion('{{ t.chatbot_serv_2 }}')">{{
+                            t.chatbot_serv_2 }}</div>
+                        <div class="suggestion-chip" onclick="sendSuggestion('{{ t.chatbot_serv_3 }}')">{{
+                            t.chatbot_serv_3 }}</div>
+                        <div class="suggestion-chip" onclick="sendSuggestion('{{ t.chatbot_serv_4 }}')">{{
+                            t.chatbot_serv_4 }}</div>
+                        <div class="suggestion-chip" onclick="sendSuggestion('{{ t.chatbot_serv_5 }}')">{{
+                            t.chatbot_serv_5 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Typing Indicator -->
+        <div class="typing-indicator" id="typingIndicator" style="display: none; padding: 10px 20px;">
+            <div class="typing-dots">
+                <span class="typing-dot" style="width: 6px; height: 6px; background: #003366;"></span>
+                <span class="typing-dot"
+                    style="width: 6px; height: 6px; background: #003366; animation-delay: 0.2s;"></span>
+                <span class="typing-dot"
+                    style="width: 6px; height: 6px; background: #003366; animation-delay: 0.4s;"></span>
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="chat-input-container">
+            <form class="chat-input-form" onsubmit="sendMessage(event)">
+                <button type="button" class="icon-btn file-btn" onclick="triggerFileUpload()" title="Attach Image">
+                    <i class="bi bi-camera"></i>
+                </button>
+                <input type="file" id="fileUpload" accept="image/*" style="display: none"
+                    onchange="handleFileSelect(event)">
+
+                <input type="text" class="chat-input" id="messageInput" placeholder="Type your message..."
+                    autocomplete="off">
+
+                <button type="button" class="icon-btn voice-btn" id="voiceBtn" onclick="toggleVoiceInput()"
+                    title="Voice Input">
+                    <i class="bi bi-mic"></i>
+                </button>
+
+                <button type="submit" class="icon-btn send-btn">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const chatMessages = document.getElementById('chatMessages');
+    const messageInput = document.getElementById('messageInput');
+    const typingIndicator = document.getElementById('typingIndicator');
+    let currentAttachment = null;
+
+    // --- Core Functions ---
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function showTyping() { typingIndicator.style.display = 'block'; scrollToBottom(); }
+    function hideTyping() { typingIndicator.style.display = 'none'; }
+
+    function addMessage(text, sender = 'bot', suggestions = [], isHtml = false) {
+        const div = document.createElement('div');
+        div.className = `message ${sender}`;
+
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        let content = isHtml ? text : escapeHtml(text).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+
+        let suggestionsHtml = '';
+        if (suggestions.length > 0) {
+            suggestionsHtml = `
+                <div class="suggestions">
+                    ${suggestions.map(s => `<div class="suggestion-chip" onclick="sendSuggestion('${s}')">${s}</div>`).join('')}
+                </div>
+            `;
+        }
+
+        const avatar = sender === 'bot' ? '<div class="bot-avatar"><i class="bi bi-robot"></i></div>' : '';
+
+        div.innerHTML = `
+            ${avatar}
+            <div class="message-wrapper">
+                <div class="message-bubble">${content}</div>
+                <div class="message-time">${timestamp}</div>
+                ${suggestionsHtml}
+            </div>
+        `;
+        chatMessages.appendChild(div);
+        scrollToBottom();
+    }
+
+    async function sendMessage(e) {
+        if (e) e.preventDefault();
+        const msg = messageInput.value.trim();
+        if (!msg && !currentAttachment) return;
+
+        addMessage(msg, 'user');
+        messageInput.value = '';
+
+        showTyping();
+
+        try {
+            const formData = new FormData();
+            formData.append('message', msg);
+            if (currentAttachment) formData.append('file', currentAttachment);
+
+            const response = await fetch('/chatbot/message', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+            hideTyping();
+
+            addMessage(data.message, 'bot', data.suggestions || []);
+            currentAttachment = null;
+        } catch (err) {
+            hideTyping();
+            addMessage("I'm sorry, I'm having trouble connecting. Please try again later.", 'bot');
+        }
+    }
+
+    function sendSuggestion(text) {
+        messageInput.value = text;
+        if (text.includes("File a new complaint")) {
+            getPreciseLocation(true); // Auto-capture location silently
+        }
+        sendMessage();
+    }
+
+    function escapeHtml(text) {
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
+    }
+
+    // --- Geolocation & Reverse Geocoding ---
+
+    async function getPreciseLocation(silent = false) {
+        if (!navigator.geolocation) {
+            if (!silent) addMessage("Geolocation is not supported by your browser.", 'bot');
+            return;
+        }
+
+        if (!silent) showTyping();
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+            const { latitude, longitude } = pos.coords;
+            try {
+                // Using Nominatim (OpenStreetMap) for reverse geocoding
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`);
+                const data = await res.json();
+                const address = data.display_name;
+
+                if (!silent) {
+                    hideTyping();
+                    addMessage(`📍 **FULL ADDRESS CAPTURED:**\n\n${address}`, 'bot');
+                }
+
+                // Send the captured location as a background message
+                fetch('/chatbot/message', {
+                    method: 'POST',
+                    body: new URLSearchParams({
+                        'message': `My current location is: ${address}`
+                    })
+                });
+
+            } catch (err) {
+                if (!silent) {
+                    hideTyping();
+                    addMessage(`Could only get coordinates: ${latitude}, ${longitude}. Please type your address.`, 'bot');
+                }
+            }
+        }, (err) => {
+            if (!silent) {
+                hideTyping();
+                addMessage("Unable to retrieve location. Please check your permissions.", 'bot');
+            }
+        });
+    }
+
+    // --- Multimedia ---
+
+    function triggerFileUpload() { document.getElementById('fileUpload').click(); }
+    function handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (file) {
+            currentAttachment = file;
+            addMessage(`📎 Photo attached: ${file.name}`, 'user');
+        }
+    }
+
+    function resetChat() {
+        if (confirm("Reset conversation?")) {
+            window.location.reload();
+        }
+    }
+
+    // --- Speech Recognition ---
+    let recognition;
+    if ('webkitSpeechRecognition' in window) {
+        recognition = new webkitSpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.onresult = (e) => {
+            messageInput.value = e.results[0][0].transcript;
+            document.getElementById('voiceBtn').classList.remove('bg-danger', 'text-white');
+            sendMessage();
+        };
+    }
+
+    function toggleVoiceInput() {
+        if (!recognition) return alert("Speech recognition not supported.");
+        recognition.start();
+        document.getElementById('voiceBtn').classList.add('bg-danger', 'text-white');
+    }
+
+</script>
+{% endblock %}

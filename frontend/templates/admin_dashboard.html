@@ -1,0 +1,1877 @@
+{% extends "base.html" %}
+
+{% block title %}Control Room - MineGuard Compliance Command{% endblock %}
+
+{% block extra_css %}
+<!-- STEP 3: Leaflet.js for Live Map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #live-hazard-map {
+        height: 500px;
+        width: 100%;
+        border-radius: 15px;
+        z-index: 1;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .custom-marker-hazard {
+        filter: hue-rotate(140deg) saturate(3);
+        /* Red-ish marker */
+    }
+
+    .custom-marker-normal {
+        filter: none;
+    }
+
+    .pulse-red {
+        animation: pulse-red 2s infinite;
+        box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+    }
+
+    @keyframes pulse-red {
+        0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+        }
+
+        70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+        }
+
+        100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+        }
+    }
+
+    .extra-small {
+        font-size: 0.75rem;
+    }
+
+    .hazard-row-highlight {
+        animation: highlight-pulse 3s infinite;
+        background-color: rgba(220, 53, 69, 0.1) !important;
+    }
+
+    @keyframes highlight-pulse {
+        0% {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+
+        50% {
+            background-color: rgba(220, 53, 69, 0.25);
+        }
+
+        100% {
+            background-color: rgba(220, 53, 69, 0.1);
+        }
+    }
+
+    .badge-priority-emergency {
+        background-color: #dc3545;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="bi bi-shield-check"></i> Mine Compliance Control Room</h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Welcome, <strong>Control-Room Administrator</strong>. Review risk, evidence, ownership, and corrective action from here.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Stats Overview Section (Moved to Top) -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm card-hover-effect"
+            style="border-left: 5px solid var(--primary-color);">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                    <div class="icon-shape bg-light text-primary rounded-circle p-3">
+                        <i class="bi bi-folder-fill fs-3"></i>
+                    </div>
+                </div>
+                <div>
+                    <h6 class="text-muted text-uppercase mb-1" style="font-size: 0.8rem; letter-spacing: 1px;">Total
+                        Complaints</h6>
+                    <h2 class="mb-0 fw-bold text-dark">{{ stats.total }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm card-hover-effect"
+            style="border-left: 5px solid var(--warning-color);">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                    <div class="icon-shape bg-light text-warning rounded-circle p-3">
+                        <i class="bi bi-clock-history fs-3"></i>
+                    </div>
+                </div>
+                <div>
+                    <h6 class="text-muted text-uppercase mb-1" style="font-size: 0.8rem; letter-spacing: 1px;">Pending
+                    </h6>
+                    <h2 class="mb-0 fw-bold text-dark">{{ stats.pending }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm card-hover-effect" style="border-left: 5px solid #0dcaf0;">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                    <div class="icon-shape bg-light text-info rounded-circle p-3">
+                        <i class="bi bi-hourglass-split fs-3"></i>
+                    </div>
+                </div>
+                <div>
+                    <h6 class="text-muted text-uppercase mb-1" style="font-size: 0.8rem; letter-spacing: 1px;">In
+                        Progress</h6>
+                    <h2 class="mb-0 fw-bold text-dark">{{ stats.in_progress }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card h-100 border-0 shadow-sm card-hover-effect" style="border-left: 5px solid #dc3545;">
+            <div class="card-body d-flex align-items-center">
+                <div class="flex-shrink-0 me-3">
+                    <div class="icon-shape bg-light text-danger rounded-circle p-3">
+                        <i class="bi bi-broadcast-pin fs-3"></i>
+                    </div>
+                </div>
+                <div>
+                    <h6 class="text-muted text-uppercase mb-1" style="font-size: 0.8rem; letter-spacing: 1px;">Live
+                        Hazards
+                    </h6>
+                    <h2 class="mb-0 fw-bold text-dark" id="hazard-count">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- STEP 3: LIVE COAL MINING & HAZARD MAP (COMPACT WIDTH) -->
+<div class="row mb-4 g-3">
+    <!-- Left: Compact Map Widget (8 Columns) -->
+    <div class="col-lg-8 col-12">
+        <div class="card border-0 shadow-sm border-top border-4 border-primary rounded-4 overflow-hidden h-100">
+            <div class="card-header bg-white py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2 border-bottom">
+                <div class="d-flex align-items-center gap-2">
+                    <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-geo-alt-fill text-primary me-1"></i>Live Coal Mining & Hazard Geospatial Monitoring</h6>
+                </div>
+                <div class="d-flex flex-wrap align-items-center gap-2 small">
+                    <span class="badge bg-primary text-white" style="font-size:0.7rem;"><i class="bi bi-building-fill me-1"></i> Open Cast</span>
+                    <span class="badge bg-dark text-white" style="font-size:0.7rem;"><i class="bi bi-layers-half me-1"></i> Underground</span>
+                    <span class="badge bg-danger rounded-pill" style="font-size:0.7rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i> Hazards</span>
+                    <a href="{{ url_for('governance.gis_map') }}" class="btn btn-xs btn-outline-primary rounded-pill px-2 py-1" style="font-size:0.72rem;">
+                        <i class="bi bi-arrows-fullscreen me-1"></i> Fullscreen GIS
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="live-hazard-map" style="height: 330px; width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Colliery Quick-Zoom Roster (4 Columns) -->
+    <div class="col-lg-4 col-12">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+            <div class="card-header bg-white py-2 px-3 d-flex justify-content-between align-items-center border-bottom">
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-layers-half text-primary me-1"></i>Colliery Roster</h6>
+                <span class="badge bg-primary-subtle text-primary border border-primary" style="font-size:0.75rem;">{{ mines|length if mines else 8 }} Active Sites</span>
+            </div>
+            <div class="card-body p-2" style="max-height: 330px; overflow-y: auto;">
+                <div class="d-flex flex-column gap-2">
+                    {% for m in mines %}
+                    <div class="p-2 border rounded-3 bg-light d-flex justify-content-between align-items-center hover-elevate" 
+                         style="cursor: pointer; transition: all 0.15s ease;"
+                         onclick="focusMine({{ m.latitude }}, {{ m.longitude }}, '{{ m.name }}')">
+                        <div>
+                            <div class="fw-bold text-dark" style="font-size: 0.82rem;">{{ m.name }}</div>
+                            <small class="text-muted" style="font-size: 0.72rem;">{{ m.subsidiary }} | {{ m.mine_type }}</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge {% if m.compliance_score >= 90 %}bg-success{% else %}bg-info{% endif %}" style="font-size:0.7rem;">
+                                {{ m.compliance_score }}%
+                            </span>
+                            <small class="d-block text-primary mt-1" style="font-size: 0.68rem;"><i class="bi bi-crosshair"></i> Locate</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- STEP 12: STATUTORY OFFICERS MONITORING HUB -->
+<div class="row mb-4 g-3">
+    
+    <!-- 1. MINE MANAGER: EXECUTIVE RISK & INCIDENT BENCHMARK -->
+    <div class="col-lg-4 col-md-6 col-12">
+        <div class="card border-0 shadow-sm rounded-4 h-100 border-top border-4 border-warning">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-warning-subtle p-2 d-flex align-items-center justify-content-center" style="width:34px; height:34px;">
+                        <i class="bi bi-person-workspace text-warning fs-6"></i>
+                    </div>
+                    <h6 class="mb-0 fw-bold text-dark">Mine Manager Stream</h6>
+                </div>
+                <a href="{{ url_for('governance.manager_dashboard') }}" class="badge bg-warning text-dark text-decoration-none fw-bold px-2 py-1">
+                    Portal <i class="bi bi-arrow-right-short"></i>
+                </a>
+            </div>
+            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                <div>
+                    <!-- Compliance Index Score -->
+                    <div class="d-flex justify-content-between align-items-center p-2 mb-3 bg-light rounded-3 border">
+                        <div>
+                            <small class="text-muted text-uppercase fw-bold" style="font-size:0.68rem;">Statutory Compliance Index</small>
+                            <h4 class="mb-0 fw-bold text-dark">94.8% <small class="fs-6 text-success fw-normal"><i class="bi bi-arrow-up-short"></i>+1.8% MoM</small></h4>
+                        </div>
+                        <span class="badge bg-success-subtle text-success border border-success px-2 py-1">DGMS Certified</span>
+                    </div>
+
+                    <!-- Colliery Benchmark Comparison -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted fw-bold text-uppercase" style="font-size:0.68rem;">Top Colliery Benchmarks</small>
+                            <small class="text-muted" style="font-size:0.7rem;">Compliance Score</small>
+                        </div>
+                        <div class="d-flex flex-column gap-2">
+                            {% for m in mines[:3] %}
+                            <div>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="fw-semibold text-dark" style="font-size:0.78rem;">{{ m.name }} <small class="text-muted">({{ m.subsidiary }})</small></span>
+                                    <span class="fw-bold {% if m.compliance_score >= 90 %}text-success{% else %}text-primary{% endif %}" style="font-size:0.78rem;">{{ m.compliance_score }}%</span>
+                                </div>
+                                <div class="progress" style="height: 6px; background-color: #f1f5f9;">
+                                    <div class="progress-bar {% if m.compliance_score >= 90 %}bg-success{% else %}bg-primary{% endif %}" 
+                                         role="progressbar" style="width: {{ m.compliance_score }}%"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-top">
+                    <a href="{{ url_for('governance.manager_dashboard') }}" class="btn btn-sm btn-outline-warning text-dark w-100 fw-semibold d-flex align-items-center justify-content-center gap-1">
+                        <i class="bi bi-graph-up-arrow"></i> Executive Risk & Trends Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. SAFETY OFFICER: LIVE TELEMETRY & CAPA PIPELINE -->
+    <div class="col-lg-5 col-md-6 col-12">
+        <div class="card border-0 shadow-sm rounded-4 h-100 border-top border-4 border-danger">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-danger-subtle p-2 d-flex align-items-center justify-content-center" style="width:34px; height:34px;">
+                        <i class="bi bi-shield-exclamation text-danger fs-6"></i>
+                    </div>
+                    <h6 class="mb-0 fw-bold text-dark">Safety Officer & HSE Monitoring</h6>
+                </div>
+                <a href="{{ url_for('governance.safety_dashboard') }}" class="badge bg-danger text-white text-decoration-none fw-bold px-2 py-1">
+                    Portal <i class="bi bi-arrow-right-short"></i>
+                </a>
+            </div>
+            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                <div>
+                    <!-- Real-Time Telemetry Alarm Gauges -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <div class="p-2 border rounded-3 text-center bg-light">
+                                <small class="text-muted d-block" style="font-size:0.68rem;">CH₄ (Methane)</small>
+                                <span class="fw-bold text-success" style="font-size:0.85rem;">0.28%</span>
+                                <small class="text-muted d-block" style="font-size:0.65rem;">&lt; 0.75% Limit</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded-3 text-center bg-light">
+                                <small class="text-muted d-block" style="font-size:0.68rem;">CO Gas</small>
+                                <span class="fw-bold text-success" style="font-size:0.85rem;">12 ppm</span>
+                                <small class="text-muted d-block" style="font-size:0.65rem;">&lt; 50 ppm Limit</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded-3 text-center bg-light">
+                                <small class="text-muted d-block" style="font-size:0.68rem;">Slope Radar</small>
+                                <span class="fw-bold text-success" style="font-size:0.85rem;">1.2 mm</span>
+                                <small class="text-muted d-block" style="font-size:0.65rem;">Normal Stability</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Safety Officers & Open CAPAs Roster -->
+                    <div class="mb-2">
+                        <small class="text-muted fw-bold text-uppercase d-block mb-2" style="font-size:0.68rem;">Colliery Safety Officers & Corrective Actions</small>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-borderless align-middle mb-0">
+                                <tbody>
+                                    {% for m in mines[:3] %}
+                                    <tr class="border-bottom">
+                                        <td class="ps-0 py-2">
+                                            <div class="fw-bold text-dark" style="font-size:0.78rem;">{{ m.safety_officer }}</div>
+                                            <small class="text-muted" style="font-size:0.68rem;">{{ m.name }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary-subtle text-secondary" style="font-size:0.68rem;">{{ m.subsidiary }}</span>
+                                        </td>
+                                        <td class="text-end pe-0">
+                                            <span class="badge {% if (m.open_capas | default(0)) > 0 %}bg-warning-subtle text-dark border border-warning{% else %}bg-success-subtle text-success border border-success{% endif %}" style="font-size:0.68rem;">
+                                                {{ m.open_capas | default(0) }} Open CAPAs
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-top">
+                    <a href="{{ url_for('governance.safety_dashboard') }}" class="btn btn-sm btn-outline-danger w-100 fw-semibold d-flex align-items-center justify-content-center gap-1">
+                        <i class="bi bi-broadcast"></i> Live Pit Violations & Telemetry Hub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. DGMS INSPECTOR: FIELD AUDIT & EVIDENCE VAULT -->
+    <div class="col-lg-3 col-md-12 col-12">
+        <div class="card border-0 shadow-sm rounded-4 h-100 border-top border-4 border-info">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-info-subtle p-2 d-flex align-items-center justify-content-center" style="width:34px; height:34px;">
+                        <i class="bi bi-clipboard2-check text-info fs-6"></i>
+                    </div>
+                    <h6 class="mb-0 fw-bold text-dark">DGMS Inspector Audit</h6>
+                </div>
+                <a href="{{ url_for('governance.inspector_dashboard') }}" class="badge bg-info text-dark text-decoration-none fw-bold px-2 py-1">
+                    Portal <i class="bi bi-arrow-right-short"></i>
+                </a>
+            </div>
+            <div class="card-body p-3 d-flex flex-column justify-content-between">
+                <div>
+                    <!-- DGMS CMR 2017 Audit Rate -->
+                    <div class="p-3 bg-dark text-white rounded-3 mb-3 text-center">
+                        <small class="text-white-50 text-uppercase fw-bold d-block" style="font-size:0.68rem;">CMR 2017 Audit Adherence</small>
+                        <h3 class="fw-bold mb-0 text-info">97.4%</h3>
+                        <small class="text-white-50" style="font-size:0.7rem;"><i class="bi bi-shield-check text-success me-1"></i>0 Active Contraventions</small>
+                    </div>
+
+                    <!-- Evidence & Return Stats -->
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded-3 border">
+                            <span class="small text-muted" style="font-size:0.75rem;"><i class="bi bi-camera-fill text-primary me-1"></i>Evidence Cryptohash</span>
+                            <span class="badge bg-success-subtle text-success border border-success" style="font-size:0.68rem;">100% SHA-256</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded-3 border">
+                            <span class="small text-muted" style="font-size:0.75rem;"><i class="bi bi-file-earmark-text-fill text-warning me-1"></i>Form 1/4 Returns</span>
+                            <span class="badge bg-primary-subtle text-primary border border-primary" style="font-size:0.68rem;">Verified</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-top">
+                    <a href="{{ url_for('governance.inspector_dashboard') }}" class="btn btn-sm btn-outline-info text-dark w-100 fw-semibold d-flex align-items-center justify-content-center gap-1">
+                        <i class="bi bi-clipboard2-check"></i> Field Audit Portal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- STEP 8: INTEGRATED COLLIERY & COMPLIANCE MONITORING SYSTEM -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden border-top border-4 border-dark">
+            <!-- Monitoring System Header -->
+            <div class="card-header bg-dark text-white py-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary p-2 d-flex align-items-center justify-content-center" style="width:36px; height:36px;">
+                        <i class="bi bi-cpu-fill text-white fs-6"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-0 fw-bold">Integrated Colliery Operations & Compliance Monitoring System</h5>
+                        <small class="text-white-50">Real-time statutory governance across Rules, Mines, Zones, Sensors, AI Cameras & Documents</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-success-subtle text-success border border-success px-3 py-2 rounded-pill d-flex align-items-center gap-1">
+                        <span class="spinner-grow spinner-grow-sm text-success" style="width:8px; height:8px;"></span> Live Telemetry Synced
+                    </span>
+                    <span class="badge bg-secondary text-white px-2 py-1 rounded-pill">DGMS CMR 2017</span>
+                </div>
+            </div>
+
+            <!-- 6 Monitoring Aspect Navigation Pills -->
+            <div class="bg-light border-bottom px-4 pt-3 pb-2">
+                <ul class="nav nav-pills gap-2 flex-wrap" id="monitoringPillTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active btn-sm rounded-pill fw-semibold px-3 py-2 d-flex align-items-center gap-2" id="tab-rules-btn" data-bs-toggle="pill" data-bs-target="#tab-rules" type="button" role="tab">
+                            <i class="bi bi-file-earmark-ruled-fill text-warning"></i>
+                            <span>1. Statutory Rules</span>
+                            <span class="badge bg-warning text-dark rounded-pill">48 Rules</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link btn-sm rounded-pill fw-semibold px-3 py-2 d-flex align-items-center gap-2" id="tab-mines-btn" data-bs-toggle="pill" data-bs-target="#tab-mines" type="button" role="tab">
+                            <i class="bi bi-building-fill text-primary"></i>
+                            <span>2. Connected Mines</span>
+                            <span class="badge bg-primary text-white rounded-pill">{{ mines|length if mines else 8 }} Sites</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link btn-sm rounded-pill fw-semibold px-3 py-2 d-flex align-items-center gap-2" id="tab-zones-btn" data-bs-toggle="pill" data-bs-target="#tab-zones" type="button" role="tab">
+                            <i class="bi bi-geo-fill text-danger"></i>
+                            <span>3. Pit & Safety Zones</span>
+                            <span class="badge bg-danger text-white rounded-pill">5 Zones</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link btn-sm rounded-pill fw-semibold px-3 py-2 d-flex align-items-center gap-2" id="tab-sensors-btn" data-bs-toggle="pill" data-bs-target="#tab-sensors" type="button" role="tab">
+                            <i class="bi bi-broadcast text-success"></i>
+                            <span>4. IoT Sensors</span>
+                            <span class="badge bg-success text-white rounded-pill">Live Telemetry</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link btn-sm rounded-pill fw-semibold px-3 py-2 d-flex align-items-center gap-2" id="tab-cameras-btn" data-bs-toggle="pill" data-bs-target="#tab-cameras" type="button" role="tab">
+                            <i class="bi bi-camera-video-fill text-info"></i>
+                            <span>5. AI CCTV Cameras</span>
+                            <span class="badge bg-info text-dark rounded-pill">4 Feeds</span>
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link btn-sm rounded-pill fw-semibold px-3 py-2 d-flex align-items-center gap-2" id="tab-docs-btn" data-bs-toggle="pill" data-bs-target="#tab-docs" type="button" role="tab">
+                            <i class="bi bi-folder-check text-secondary"></i>
+                            <span>6. Statutory Documents</span>
+                            <span class="badge bg-dark text-white rounded-pill">SHA-256 Vault</span>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="card-body p-4">
+                <div class="tab-content" id="monitoringTabContent">
+                    
+                    <!-- 1. STATUTORY RULES TAB -->
+                    <div class="tab-pane fade show active" id="tab-rules" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-shield-check text-warning me-1"></i>Statutory Compliance & Rule Enforcement Matrix</h6>
+                                <small class="text-muted">Real-time audit against Coal Mines Regulations 2017 & Mines Act 1952</small>
+                            </div>
+                            <span class="badge bg-success-subtle text-success border border-success px-3 py-1">98.2% Statutory Adherence</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" style="font-size:0.85rem;">
+                                <thead class="table-light">
+                                    <tr class="text-uppercase text-muted" style="font-size:0.75rem;">
+                                        <th>Regulation / Act</th>
+                                        <th>Statutory Subject</th>
+                                        <th>Prescribed Threshold</th>
+                                        <th>Current Audit Value</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Verification</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><span class="badge bg-dark">CMR 2017 Reg 153</span></td>
+                                        <td class="fw-semibold">Inflammable Gas (CH₄ Methane) Limits</td>
+                                        <td>Maximum 0.75% in general body of air</td>
+                                        <td><span class="text-success fw-bold">0.24% - 0.28%</span> (Average)</td>
+                                        <td><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Compliant</span></td>
+                                        <td class="text-end"><span class="badge bg-light text-dark border">Auto-Telemetry</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-dark">CMR 2017 Reg 104</span></td>
+                                        <td class="fw-semibold">Strata Control & Support Management Plan (SMP)</td>
+                                        <td>Daily Systematic Support & Pull-Test Logs</td>
+                                        <td><span class="text-dark">100% Support Rows Tested</span></td>
+                                        <td><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Compliant</span></td>
+                                        <td class="text-end"><span class="badge bg-light text-dark border">Mine Manager Sign-Off</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-dark">DGMS Cir 02/2020</span></td>
+                                        <td class="fw-semibold">HEMM Proximity Radar & AV Alarm</td>
+                                        <td>100% Heavy Dumpers/Excavators Fitted</td>
+                                        <td><span class="text-dark">142/142 Vehicles Equipped</span></td>
+                                        <td><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Compliant</span></td>
+                                        <td class="text-end"><span class="badge bg-light text-dark border">VIMS Telemetry</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-dark">CMR 2017 Reg 76</span></td>
+                                        <td class="fw-semibold">Haul Road Gradient & Safety Berm Height</td>
+                                        <td>Gradient &le; 1:16 | Berm Height &ge; Tyre Radius</td>
+                                        <td><span class="text-dark">Gradient 1:18 | Berm 2.1m</span></td>
+                                        <td><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Compliant</span></td>
+                                        <td class="text-end"><span class="badge bg-light text-dark border">LiDAR / Drone Scan</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><span class="badge bg-dark">CPCB / MoEF&CC</span></td>
+                                        <td class="fw-semibold">Respirable Coal Dust (PM10 / PM2.5)</td>
+                                        <td>Daily PM10 &le; 100 &mu;g/m&sup3; in ambient air</td>
+                                        <td><span class="text-success fw-bold">84.2 &mu;g/m&sup3;</span> (Mist Cannons Active)</td>
+                                        <td><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Compliant</span></td>
+                                        <td class="text-end"><span class="badge bg-light text-dark border">Continuous CAAQMS</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 2. CONNECTED MINES TAB -->
+                    <div class="tab-pane fade" id="tab-mines" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-building-fill text-primary me-1"></i>Collieries & Leaseholds Operational Status</h6>
+                                <small class="text-muted">Production, EC capacity, and live statutory rating per mining site</small>
+                            </div>
+                            <span class="badge bg-primary">{{ mines|length if mines else 8 }} Production Leaseholds Active</span>
+                        </div>
+                        <div class="row g-3">
+                            {% for m in mines %}
+                            <div class="col-lg-3 col-md-6 col-12">
+                                <div class="card h-100 border rounded-3 p-3 bg-light shadow-sm">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <span class="badge bg-primary-subtle text-primary border border-primary">{{ m.subsidiary }}</span>
+                                        <span class="badge {% if m.compliance_score >= 90 %}bg-success{% else %}bg-info{% endif %}">{{ m.compliance_score }}% Score</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">{{ m.name }}</h6>
+                                    <small class="text-muted d-block mb-2">{{ m.area }} | <strong>{{ m.mine_type }}</strong></small>
+                                    <div class="p-2 bg-white rounded border small mb-2">
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Capacity:</span>
+                                            <span class="fw-semibold">{{ m.ec_capacity_mtpa }} MTPA</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <span class="text-muted">Safety Officer:</span>
+                                            <span class="fw-semibold text-truncate ms-1" style="max-width:110px;">{{ m.safety_officer }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-auto pt-1">
+                                        <span class="badge bg-success-subtle text-success"><i class="bi bi-circle-fill" style="font-size:6px;"></i> Operational</span>
+                                        <button type="button" class="btn btn-xs btn-outline-primary py-0 px-2" onclick="focusMine({{ m.latitude }}, {{ m.longitude }}, '{{ m.name }}')">
+                                            <i class="bi bi-geo-alt"></i> Locate
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- 3. PIT & SAFETY ZONES TAB -->
+                    <div class="tab-pane fade" id="tab-zones" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-geo-fill text-danger me-1"></i>Colliery Working Sectors & Danger Zones</h6>
+                                <small class="text-muted">Live hazard level, access permissions, and environmental controls per sector</small>
+                            </div>
+                            <span class="badge bg-danger-subtle text-danger border border-danger">0 Red Zone Breaches</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-4 col-12">
+                                <div class="card h-100 border rounded-3 p-3 bg-light">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="badge bg-danger">Zone A: Active Pit Face</span>
+                                        <span class="badge bg-success-subtle text-success border">Highwall Stable</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">Gevra Deep Pit Seam-I</h6>
+                                    <p class="small text-muted mb-2">Open cast excavation with 42m bench height and slope stability radar radar-lock.</p>
+                                    <ul class="list-unstyled small mb-0 d-flex flex-column gap-1">
+                                        <li><i class="bi bi-check2 text-success me-1"></i>Slope displacement: <strong>1.2 mm (Normal)</strong></li>
+                                        <li><i class="bi bi-check2 text-success me-1"></i>HEMM Excavators: <strong>4 Heavy Shovels Active</strong></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-12">
+                                <div class="card h-100 border rounded-3 p-3 bg-light">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="badge bg-primary">Zone B: Haulage Arterial</span>
+                                        <span class="badge bg-success-subtle text-success border">Speed Monitored</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">Dipka-Gevra Arterial Haul Road</h6>
+                                    <p class="small text-muted mb-2">Dual-lane 240T dumper haulage with laser berm barriers and mist suppression.</p>
+                                    <ul class="list-unstyled small mb-0 d-flex flex-column gap-1">
+                                        <li><i class="bi bi-check2 text-success me-1"></i>Speed Limit: <strong>&le; 30 km/h (Laser Tracked)</strong></li>
+                                        <li><i class="bi bi-check2 text-success me-1"></i>Continuous Mist Cannons: <strong>Active (8 Units)</strong></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-12">
+                                <div class="card h-100 border rounded-3 p-3 bg-light">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="badge bg-dark">Zone C: Underground Face</span>
+                                        <span class="badge bg-success-subtle text-success border">Ventilation Good</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">Moonidih Seam-XVI Longwall</h6>
+                                    <p class="small text-muted mb-2">Deep underground continuous miner face with degasification bleeder shafts.</p>
+                                    <ul class="list-unstyled small mb-0 d-flex flex-column gap-1">
+                                        <li><i class="bi bi-check2 text-success me-1"></i>Ventilation: <strong>4,200 CFM Airflow</strong></li>
+                                        <li><i class="bi bi-check2 text-success me-1"></i>CH₄ Sensor: <strong>0.28% (Safe Margin)</strong></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-12">
+                                <div class="card h-100 border rounded-3 p-3 bg-light">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="badge bg-warning text-dark">Zone D: Blasting Perimeter</span>
+                                        <span class="badge bg-secondary text-white">Controlled Area</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">Bhubaneswari Overburden Blasting Grid</h6>
+                                    <p class="small text-muted mb-2">Controlled explosive perimeter with automated geo-fenced siren alarms and vibration monitors.</p>
+                                    <div class="d-flex gap-2 small">
+                                        <span class="badge bg-light text-dark border">Vibration: 4.2 mm/s</span>
+                                        <span class="badge bg-light text-dark border">Siren: Auto-Interlocked</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-12">
+                                <div class="card h-100 border rounded-3 p-3 bg-light">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="badge bg-info text-dark">Zone E: Coal Handling Plant</span>
+                                        <span class="badge bg-success-subtle text-success border">Sprinklers On</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1">Ashok Rapid Loading System (RLS) & Stockyard</h6>
+                                    <p class="small text-muted mb-2">Conveyor transfers and rail loading silos with automated dust suppression and infrared thermal scanning.</p>
+                                    <div class="d-flex gap-2 small">
+                                        <span class="badge bg-light text-dark border">Dust PM10: 78 &mu;g/m&sup3;</span>
+                                        <span class="badge bg-light text-dark border">Thermal Cam: 26.5&deg;C Normal</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4. IOT SENSORS TAB -->
+                    <div class="tab-pane fade" id="tab-sensors" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-broadcast text-success me-1"></i>Real-Time IoT Environmental & Geotechnical Sensors</h6>
+                                <small class="text-muted">Live continuous feed from telemetry nodes with automated threshold alarm breaches</small>
+                            </div>
+                            <span class="badge bg-success"><i class="bi bi-wifi me-1"></i>24/24 Sensors Online</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-lg-2 col-md-4 col-6">
+                                <div class="card p-3 border rounded-3 text-center bg-light h-100">
+                                    <div class="text-muted extra-small fw-bold text-uppercase mb-1">Methane (CH₄)</div>
+                                    <h3 class="fw-bold text-success mb-0">0.24%</h3>
+                                    <small class="text-muted d-block mt-1">&lt; 0.75% Stat. Limit</small>
+                                    <span class="badge bg-success-subtle text-success border border-success mt-2">Normal</span>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6">
+                                <div class="card p-3 border rounded-3 text-center bg-light h-100">
+                                    <div class="text-muted extra-small fw-bold text-uppercase mb-1">Carbon Monoxide</div>
+                                    <h3 class="fw-bold text-success mb-0">8 ppm</h3>
+                                    <small class="text-muted d-block mt-1">&lt; 50 ppm Stat. Limit</small>
+                                    <span class="badge bg-success-subtle text-success border border-success mt-2">Normal</span>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6">
+                                <div class="card p-3 border rounded-3 text-center bg-light h-100">
+                                    <div class="text-muted extra-small fw-bold text-uppercase mb-1">Slope Radar</div>
+                                    <h3 class="fw-bold text-success mb-0">1.1 mm</h3>
+                                    <small class="text-muted d-block mt-1">&lt; 15 mm Alert Limit</small>
+                                    <span class="badge bg-success-subtle text-success border border-success mt-2">Stable Highwall</span>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6">
+                                <div class="card p-3 border rounded-3 text-center bg-light h-100">
+                                    <div class="text-muted extra-small fw-bold text-uppercase mb-1">Dust (PM10)</div>
+                                    <h3 class="fw-bold text-success mb-0">88.4</h3>
+                                    <small class="text-muted d-block mt-1">&mu;g/m&sup3; (CPCB &le; 100)</small>
+                                    <span class="badge bg-success-subtle text-success border border-success mt-2">Sprinklers On</span>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6">
+                                <div class="card p-3 border rounded-3 text-center bg-light h-100">
+                                    <div class="text-muted extra-small fw-bold text-uppercase mb-1">Air Velocity</div>
+                                    <h3 class="fw-bold text-primary mb-0">3,850</h3>
+                                    <small class="text-muted d-block mt-1">CFM Fan Output</small>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary mt-2">Adequate</span>
+                                </div>
+                            </div>
+                            <div class="col-lg-2 col-md-4 col-6">
+                                <div class="card p-3 border rounded-3 text-center bg-light h-100">
+                                    <div class="text-muted extra-small fw-bold text-uppercase mb-1">Vibration</div>
+                                    <h3 class="fw-bold text-success mb-0">4.2</h3>
+                                    <small class="text-muted d-block mt-1">mm/s Peak Velocity</small>
+                                    <span class="badge bg-success-subtle text-success border border-success mt-2">Within Limit</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 5. AI CCTV CAMERAS TAB -->
+                    <div class="tab-pane fade" id="tab-cameras" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-camera-video-fill text-info me-1"></i>AI CCTV Video Analytics & Computer Vision Feeds</h6>
+                                <small class="text-muted">Edge AI streams tracking PPE compliance, proximity collision alarms, and thermal fire detection</small>
+                            </div>
+                            <span class="badge bg-info text-dark">4 AI Vision Streams Active</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-3 col-6">
+                                <div class="card border rounded-3 p-3 bg-dark text-white text-center h-100">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="badge bg-danger"><i class="bi bi-record-circle-fill me-1"></i>REC</span>
+                                        <small class="text-white-50">CAM-01</small>
+                                    </div>
+                                    <i class="bi bi-truck text-warning" style="font-size:2rem;"></i>
+                                    <h6 class="fw-bold mt-2 mb-1" style="font-size:0.85rem;">Haul Road Junction 03</h6>
+                                    <small class="text-white-50 d-block mb-2" style="font-size:0.72rem;">HEMM Proximity & Blindspot AI</small>
+                                    <span class="badge bg-success-subtle text-success border border-success" style="font-size:0.7rem;">0 Proximity Breaches</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="card border rounded-3 p-3 bg-dark text-white text-center h-100">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="badge bg-danger"><i class="bi bi-record-circle-fill me-1"></i>REC</span>
+                                        <small class="text-white-50">CAM-02</small>
+                                    </div>
+                                    <i class="bi bi-person-check-fill text-info" style="font-size:2rem;"></i>
+                                    <h6 class="fw-bold mt-2 mb-1" style="font-size:0.85rem;">Pit Incline Checkpoint</h6>
+                                    <small class="text-white-50 d-block mb-2" style="font-size:0.72rem;">Helmet & High-Vis Vest AI</small>
+                                    <span class="badge bg-success-subtle text-success border border-success" style="font-size:0.7rem;">99.4% PPE Adherence</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="card border rounded-3 p-3 bg-dark text-white text-center h-100">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="badge bg-danger"><i class="bi bi-record-circle-fill me-1"></i>REC</span>
+                                        <small class="text-white-50">CAM-03</small>
+                                    </div>
+                                    <i class="bi bi-shield-exclamation text-primary" style="font-size:2rem;"></i>
+                                    <h6 class="fw-bold mt-2 mb-1" style="font-size:0.85rem;">Highwall Bench 04 Berm</h6>
+                                    <small class="text-white-50 d-block mb-2" style="font-size:0.72rem;">Safety Berm Height Laser</small>
+                                    <span class="badge bg-success-subtle text-success border border-success" style="font-size:0.7rem;">Berm &ge; 1.8m Compliant</span>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="card border rounded-3 p-3 bg-dark text-white text-center h-100">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span class="badge bg-danger"><i class="bi bi-record-circle-fill me-1"></i>REC</span>
+                                        <small class="text-white-50">CAM-04</small>
+                                    </div>
+                                    <i class="bi bi-fire text-danger" style="font-size:2rem;"></i>
+                                    <h6 class="fw-bold mt-2 mb-1" style="font-size:0.85rem;">Underground Return Airway</h6>
+                                    <small class="text-white-50 d-block mb-2" style="font-size:0.72rem;">Infrared Spontaneous Fire Cam</small>
+                                    <span class="badge bg-success-subtle text-success border border-success" style="font-size:0.7rem;">Temp 28.4&deg;C (Normal)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 6. STATUTORY DOCUMENTS TAB -->
+                    <div class="tab-pane fade" id="tab-docs" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="fw-bold text-dark mb-0"><i class="bi bi-folder-check text-secondary me-1"></i>Statutory Documents, Returns & Cryptographic Vault</h6>
+                                <small class="text-muted">Mandatory compliance filings verified with SHA-256 tamper-proof signatures</small>
+                            </div>
+                            <a href="{{ url_for('governance.crypto_audit') }}" class="btn btn-sm btn-outline-dark fw-semibold">
+                                <i class="bi bi-shield-lock-fill text-warning me-1"></i> View Blockchain Audit Vault
+                            </a>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" style="font-size:0.85rem;">
+                                <thead class="table-light">
+                                    <tr class="text-uppercase text-muted" style="font-size:0.75rem;">
+                                        <th>Document Type</th>
+                                        <th>Colliery / Subsidiary</th>
+                                        <th>Regulatory Authority</th>
+                                        <th>Filing Period</th>
+                                        <th>Cryptographic Seal</th>
+                                        <th class="text-end">Statutory Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-bold"><i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i>DGMS Form 1/4 Annual Safety Return</td>
+                                        <td>Gevra Mega OCP (SECL)</td>
+                                        <td>DGMS Central Zone</td>
+                                        <td>Annual 2025-26</td>
+                                        <td><code class="text-primary small">a4f9b28...e3c1</code></td>
+                                        <td class="text-end"><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Accepted</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold"><i class="bi bi-file-earmark-medical-fill text-info me-1"></i>Form O Periodical Medical Exam (PME)</td>
+                                        <td>Moonidih UG Colliery (BCCL)</td>
+                                        <td>Mines Act Section 40</td>
+                                        <td>Quarterly Q1 2026</td>
+                                        <td><code class="text-primary small">f882c91...904b</code></td>
+                                        <td class="text-end"><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>100% Screened</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold"><i class="bi bi-file-earmark-check-fill text-success me-1"></i>VTC Initial & Refresher Safety Certs</td>
+                                        <td>Bhubaneswari OCP (MCL)</td>
+                                        <td>Mines VTC Rules 1966</td>
+                                        <td>Monthly Cycle</td>
+                                        <td><code class="text-primary small">c1029ab...d441</code></td>
+                                        <td class="text-end"><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>1,420 Certified</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold"><i class="bi bi-file-earmark-text-fill text-warning me-1"></i>Half-Yearly EC Environmental Compliance</td>
+                                        <td>Dipka OCP (SECL)</td>
+                                        <td>MoEF&CC / CPCB</td>
+                                        <td>HY-2 2025</td>
+                                        <td><code class="text-primary small">d941e72...b02a</code></td>
+                                        <td class="text-end"><span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>MoEF Compliant</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Analytics Section -->
+
+<!-- Detailed Analytics Section -->
+<div class="row mb-4">
+    <!-- Category Distribution -->
+    <div class="col-md-6 mb-4 mb-md-0">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-pie-chart-fill text-primary me-2"></i> Category
+                    Distribution</h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Breakdown -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                <h5 class="mb-0 fw-bold text-dark"><i class="bi bi-bar-chart-fill text-info me-2"></i> Status Overview
+                </h5>
+            </div>
+            <div class="card-body">
+                <div style="height: 300px;">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Complaints Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><i class="bi bi-list-ul"></i> All Complaints</h4>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="card-body border-bottom bg-light">
+                <form method="GET" action="{{ url_for('complaints.admin_dashboard') }}" class="row g-3">
+                    <!-- Search Bar -->
+                    <div class="col-12">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control" name="search"
+                                placeholder="Search by title or description..." value="{{ filter_search }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filter_city" class="form-label fw-bold">
+                            <i class="bi bi-building"></i> Municipal Corp.
+                        </label>
+                        <select class="form-select" id="filter_city" name="city" onchange="this.form.submit()">
+                            <option value="All" {% if not filter_city or filter_city=='All' %}selected{% endif %}>All
+                            </option>
+                            <option value="Raipur Municipal Corporation" {% if
+                                filter_city=='Raipur Municipal Corporation' %}selected{% endif %}>Raipur</option>
+                            <option value="Bilaspur Municipal Corporation" {% if
+                                filter_city=='Bilaspur Municipal Corporation' %}selected{% endif %}>Bilaspur</option>
+                            <option value="Durg Municipal Corporation" {% if filter_city=='Durg Municipal Corporation'
+                                %}selected{% endif %}>Durg</option>
+                            <option value="Bhilai Municipal Corporation" {% if
+                                filter_city=='Bhilai Municipal Corporation' %}selected{% endif %}>Bhilai</option>
+                            <option value="Korba Municipal Corporation" {% if filter_city=='Korba Municipal Corporation'
+                                %}selected{% endif %}>Korba</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="filter_category" class="form-label fw-bold">
+                            <i class="bi bi-funnel"></i> Category
+                        </label>
+                        <select class="form-select" id="filter_category" name="category" onchange="this.form.submit()">
+                            <option value="All" {% if not filter_category or filter_category=='All' %}selected{% endif
+                                %}>All</option>
+                            <option value="Road & Drainage" {% if filter_category=='Road & Drainage' %}selected{% endif
+                                %}>Road & Drainage</option>
+                            <option value="Water Supply Issues" {% if filter_category=='Water Supply Issues'
+                                %}selected{% endif %}>Water Supply Issues</option>
+                            <option value="Sanitation & Waste Management" {% if
+                                filter_category=='Sanitation & Waste Management' %}selected{% endif %}>Sanitation &
+                                Waste Management</option>
+                            <option value="Street Light Complaints" {% if filter_category=='Street Light Complaints'
+                                %}selected{% endif %}>Street Light Complaints</option>
+                            <option value="Public Health" {% if filter_category=='Public Health' %}selected{% endif %}>
+                                Public Health</option>
+                            <option value="Encroachment" {% if filter_category=='Encroachment' %}selected{% endif %}>
+                                Encroachment</option>
+                            <option value="Property Tax Issues" {% if filter_category=='Property Tax Issues'
+                                %}selected{% endif %}>Property Tax Issues</option>
+                            <option value="Building Permission Delays" {% if
+                                filter_category=='Building Permission Delays' %}selected{% endif %}>Building Permission
+                                Delays</option>
+                            <option value="Environmental Hazards" {% if filter_category=='Environmental Hazards'
+                                %}selected{% endif %}>Environmental Hazards</option>
+                            <option value="Public Safety" {% if filter_category=='Public Safety' %}selected{% endif %}>
+                                Public Safety</option>
+                            <option value="Other" {% if filter_category=='Other' %}selected{% endif %}>Other</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="filter_status" class="form-label fw-bold">
+                            <i class="bi bi-funnel"></i> Status
+                        </label>
+                        <select class="form-select" id="filter_status" name="status" onchange="this.form.submit()">
+                            <option value="All" {% if not filter_status or filter_status=='All' %}selected{% endif %}>
+                                All
+                            </option>
+                            <option value="Pending" {% if filter_status=='Pending' %}selected{% endif %}>Pending
+                            </option>
+                            <option value="In Progress" {% if filter_status=='In Progress' %}selected{% endif %}>In
+                                Progress
+                            </option>
+                            <option value="Resolved" {% if filter_status=='Resolved' %}selected{% endif %}>Resolved
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="filter_priority" class="form-label fw-bold">
+                            <i class="bi bi-funnel"></i> Priority
+                        </label>
+                        <select class="form-select" id="filter_priority" name="priority" onchange="this.form.submit()">
+                            <option value="All" {% if not filter_priority or filter_priority=='All' %}selected{% endif
+                                %}>All
+                            </option>
+                            <option value="Low" {% if filter_priority=='Low' %}selected{% endif %}>Low</option>
+                            <option value="Medium" {% if filter_priority=='Medium' %}selected{% endif %}>Medium</option>
+                            <option value="High" {% if filter_priority=='High' %}selected{% endif %}>High</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 d-flex align-items-end">
+                        <a href="{{ url_for('complaints.admin_dashboard') }}" class="btn btn-outline-secondary w-100">
+                            <i class="bi bi-x-circle"></i> Clear Filters
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card-body">
+                {% if complaints %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Evidence & AI Detection</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Assigned Dept</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for complaint in complaints %}
+                            <tr id="complaint-row-{{ complaint['id'] }}"
+                                class="{% if complaint['priority'] == 'Emergency' %}hazard-row-highlight{% endif %}">
+                                <td>
+                                    <strong>#{{ complaint['id'] }}</strong>
+                                    {% if complaint['is_escalated'] %}
+                                    <i class="bi bi-exclamation-triangle-fill text-danger" title="AI Escalated"
+                                        style="animation: pulse-red 1s infinite;"></i>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <i class="bi bi-person-circle"></i> {{ complaint['username'] }}<br>
+                                    <small class="text-muted">{{ complaint['city'] }}</small>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if complaint['attachment'] %}
+                                        <img src="{{ url_for('static', filename='uploads/' + complaint['attachment']) }}"
+                                            class="rounded border me-2"
+                                            style="width: 50px; height: 50px; object-fit: cover;"
+                                            data-bs-toggle="tooltip" title="Click 'Manage' to see full image">
+                                        {% else %}
+                                        <div class="bg-light rounded d-flex align-items-center justify-content-center me-2"
+                                            style="width: 50px; height: 50px;">
+                                            <i class="bi bi-image text-muted"></i>
+                                        </div>
+                                        {% endif %}
+
+                                        {% if complaint['vision_results'] %}
+                                        {% set top_d = complaint['vision_results'][0] %}
+                                        <div>
+                                            <span
+                                                class="badge bg-info-subtle text-info border border-info extra-small d-block mb-1">
+                                                {{ top_d.label }}
+                                            </span>
+                                            <small class="text-muted" style="font-size: 0.7rem;">
+                                                AI Conf: {{ (top_d.confidence * 100) | int }}%
+                                            </small>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted small">No AI Detection</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-secondary">{{ complaint['category'] }}</span></td>
+                                <td>
+                                    {% if complaint['priority'] == 'Emergency' %}
+                                    <span class="badge bg-danger pulse-red">Emergency</span>
+                                    {% elif complaint['priority'] == 'High' %}
+                                    <span class="badge badge-priority-high">High</span>
+                                    {% elif complaint['priority'] == 'Medium' %}
+                                    <span class="badge badge-priority-medium">Medium</span>
+                                    {% else %}
+                                    <span class="badge badge-priority-low">Low</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="fw-bold text-primary">{{ complaint['assigned_to'] or 'Unassigned'
+                                        }}</small>
+                                </td>
+                                <td>
+                                    {% if complaint['status'] == 'Pending' %}
+                                    <span class="badge status-pending">{{ complaint['status'] }}</span>
+                                    {% elif complaint['status'] == 'In Progress' %}
+                                    <span class="badge status-in-progress">{{ complaint['status'] }}</span>
+                                    {% else %}
+                                    <span class="badge status-resolved">{{ complaint['status'] }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ complaint['created_at'][:10] }}</td>
+                                <td>
+                                    <div class="d-flex flex-column gap-1">
+                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                            data-bs-target="#updateModal-{{ complaint['id'] }}">
+                                            <i class="bi bi-pencil"></i> Manage
+                                        </button>
+                                        {% if complaint['latitude'] and complaint['longitude'] %}
+                                        <a href="https://www.google.com/maps?q={{ complaint['latitude'] }},{{ complaint['longitude'] }}"
+                                            target="_blank" class="btn btn-sm btn-outline-info" title="View on Map">
+                                            <i class="bi bi-geo-alt-fill"></i> Map
+                                        </a>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                            data-bs-target="#deleteModal-{{ complaint['id'] }}">
+                                            <i class="bi bi-trash3-fill"></i> Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center p-5">
+                    <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+                    <h4 class="mt-3">No complaints yet</h4>
+                    <p class="text-muted">No complaints have been submitted yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals moved inside content block to ensure they have access to context and are rendered -->
+{% for complaint in complaints %}
+<!-- Update Modal {{ complaint['id'] }} -->
+<div class="modal fade" id="updateModal-{{ complaint['id'] }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manage Complaint #{{ complaint['id'] }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('complaints.update_complaint', complaint_id=complaint['id']) }}">
+                <div class="modal-body text-start">
+                    <div class="mb-3">
+                        <label class="fw-bold">User Information:</label>
+                        <p><i class="bi bi-person"></i> {{ complaint['username'] }} ({{
+                            complaint['email'] }})</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold">Title:</label>
+                        <p>{{ complaint['title'] }}</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold">Description:</label>
+                        <p class="border p-3 bg-light rounded">{{ complaint['description'] }}</p>
+                    </div>
+
+                    <div class="row mb-3 g-2">
+                        <div class="col-md-6">
+                            <label class="fw-bold small text-muted"><i class="bi bi-geo"></i> Filing Location
+                                (Live):</label>
+                            {% if complaint['user_lat'] and complaint['user_lon'] %}
+                            <div class="p-2 border rounded bg-white small">
+                                <a href="https://www.google.com/maps?q={{ complaint['user_lat'] }},{{ complaint['user_lon'] }}"
+                                    target="_blank" class="text-decoration-none">
+                                    <i class="bi bi-pin-map-fill text-primary"></i> {{ complaint['user_lat'] }}, {{
+                                    complaint['user_lon'] }}
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="p-2 border rounded bg-white small text-muted">Not captured</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="fw-bold small text-muted"><i class="bi bi-camera-fill"></i> Evidence Location
+                                (GPS):</label>
+                            {% if complaint['evidence_lat'] and complaint['evidence_lon'] %}
+                            <div class="p-2 border rounded bg-white small">
+                                <a href="https://www.google.com/maps?q={{ complaint['evidence_lat'] }},{{ complaint['evidence_lon'] }}"
+                                    target="_blank" class="text-decoration-none">
+                                    <i class="bi bi-pin-map-fill text-success"></i> {{ complaint['evidence_lat'] }}, {{
+                                    complaint['evidence_lon'] }}
+                                </a>
+                            </div>
+                            {% else %}
+                            <div class="p-2 border rounded bg-white small text-muted">No GPS in image</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if complaint['latitude'] and complaint['longitude'] %}
+                    <!-- Exact Property Location Map -->
+                    <div class="mb-3">
+                        <div class="card border rounded-3 overflow-hidden shadow-sm">
+                            <div class="card-header bg-light py-2 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <label class="fw-bold small mb-0"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Property / Case Location:</label>
+                                    <div class="small text-muted">{{ complaint['location'] or complaint['city'] }}</div>
+                                </div>
+                                <a href="https://www.google.com/maps/dir/?api=1&destination={{ complaint['latitude'] }},{{ complaint['longitude'] }}{% if complaint['google_place_id'] %}&destination_place_id={{ complaint['google_place_id'] }}{% endif %}"
+                                    target="_blank" rel="noopener noreferrer" id="admin-directions-btn-{{ complaint.id }}"
+                                    class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">
+                                    <i class="bi bi-cursor-fill me-1"></i> Get Directions
+                                </a>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="admin-map-{{ complaint.id }}" class="location-detail-map" style="height: 220px; border: none; border-radius: 0;"></div>
+                            </div>
+                            <div class="card-footer bg-white py-1 px-3 d-flex justify-content-between align-items-center small text-muted">
+                                <span><i class="bi bi-crosshair me-1"></i> {{ "%.5f"|format(complaint['latitude']) }}, {{ "%.5f"|format(complaint['longitude']) }}</span>
+                                {% if complaint['google_place_id'] %}
+                                <span><i class="bi bi-google me-1"></i> Place ID: <code>{{ complaint['google_place_id'] }}</code></span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="category{{ complaint['id'] }}" class="fw-bold form-label">Category:</label>
+                        <select class="form-select select-sm" id="category{{ complaint['id'] }}" name="category">
+                            <option value="Road & Drainage" {% if complaint['category']=='Road & Drainage' %}selected{%
+                                endif %}>Road & Drainage</option>
+                            <option value="Water Supply Issues" {% if complaint['category']=='Water Supply Issues'
+                                %}selected{% endif %}>Water Supply Issues</option>
+                            <option value="Sanitation & Waste Management" {% if
+                                complaint['category']=='Sanitation & Waste Management' %}selected{% endif %}>Sanitation
+                                & Waste Management</option>
+                            <option value="Street Light Complaints" {% if
+                                complaint['category']=='Street Light Complaints' %}selected{% endif %}>Street Light
+                                Complaints</option>
+                            <option value="Public Health" {% if complaint['category']=='Public Health' %}selected{%
+                                endif %}>Public Health</option>
+                            <option value="Encroachment" {% if complaint['category']=='Encroachment' %}selected{% endif
+                                %}>
+                                Encroachment</option>
+                            <option value="Property Tax Issues" {% if complaint['category']=='Property Tax Issues'
+                                %}selected{% endif %}>Property Tax Issues</option>
+                            <option value="Building Permission Delays" {% if
+                                complaint['category']=='Building Permission Delays' %}selected{% endif %}>Building
+                                Permission Delays</option>
+                            <option value="Environmental Hazards" {% if complaint['category']=='Environmental Hazards'
+                                %}selected{% endif %}>Environmental Hazards</option>
+                            <option value="Public Safety" {% if complaint['category']=='Public Safety' %}selected{%
+                                endif %}>Public Safety</option>
+                            <option value="Other" {% if complaint['category']=='Other' %}selected{% endif %}>Other
+                            </option>
+                        </select>
+                        <small class="text-primary fw-bold"><i class="bi bi-pencil-square"></i> Manual Override:</small>
+                        <small class="text-muted">Adjust if AI mis-categorized this.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="priority{{ complaint['id'] }}" class="fw-bold form-label">Priority:</label>
+                        <select class="form-select select-sm" id="priority{{ complaint['id'] }}" name="priority">
+                            <option value="Low" {% if complaint['priority']=='Low' %}selected{% endif %}>Low</option>
+                            <option value="Medium" {% if complaint['priority']=='Medium' %}selected{% endif %}>Medium
+                            </option>
+                            <option value="High" {% if complaint['priority']=='High' %}selected{% endif %}>High</option>
+                            <option value="Emergency" {% if complaint['priority']=='Emergency' %}selected{% endif %}>
+                                Emergency (Override)</option>
+                        </select>
+                        {% if complaint['is_escalated'] %}
+                        <span class="badge bg-danger mt-2"><i class="bi bi-robot"></i> AI Escalated</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="assigned_to{{ complaint['id'] }}" class="fw-bold form-label">Assigned
+                            Department:</label>
+                        <select class="form-select select-sm" id="assigned_to{{ complaint['id'] }}" name="assigned_to">
+                            <option value="General Administration" {% if
+                                complaint['assigned_to']=='General Administration' %}selected{% endif %}>General
+                                Administration</option>
+                            <option value="Public Works Department (PWD)" {% if
+                                complaint['assigned_to']=='Public Works Department (PWD)' %}selected{% endif %}>Public
+                                Works Department (PWD)</option>
+                            <option value="Municipal Water Board" {% if
+                                complaint['assigned_to']=='Municipal Water Board' %}selected{% endif %}>Municipal Water
+                                Board</option>
+                            <option value="Municipal Solid Waste Management" {% if
+                                complaint['assigned_to']=='Municipal Solid Waste Management' %}selected{% endif %}>
+                                Municipal Solid Waste Management</option>
+                            <option value="Municipal Lighting Department" {% if
+                                complaint['assigned_to']=='Municipal Lighting Department' %}selected{% endif %}>
+                                Municipal Lighting Department</option>
+                            <option value="Department of Health & Family Welfare" {% if
+                                complaint['assigned_to']=='Department of Health & Family Welfare' %}selected{% endif %}>
+                                Department of Health & Family Welfare</option>
+                            <option value="Enforcement & Encroachment Department" {% if
+                                complaint['assigned_to']=='Enforcement & Encroachment Department' %}selected{% endif %}>
+                                Enforcement & Encroachment Department</option>
+                            <option value="Revenue & Tax Department" {% if
+                                complaint['assigned_to']=='Revenue & Tax Department' %}selected{% endif %}>Revenue & Tax
+                                Department</option>
+                            <option value="Town Planning Department" {% if
+                                complaint['assigned_to']=='Town Planning Department' %}selected{% endif %}>Town Planning
+                                Department</option>
+                            <option value="Chhattisgarh Environment Conservation Board" {% if
+                                complaint['assigned_to']=='Chhattisgarh Environment Conservation Board' %}selected{%
+                                endif %}>Chhattisgarh Environment Conservation Board</option>
+                            <option value="Home Department / Police" {% if
+                                complaint['assigned_to']=='Home Department / Police' %}selected{% endif %}>Home
+                                Department / Police</option>
+                            <option value="Fire & Emergency Services" {% if
+                                complaint['assigned_to']=='Fire & Emergency Services' %}selected{% endif %}>Fire &
+                                Emergency Services</option>
+                            <option value="Municipal Animal Control" {% if
+                                complaint['assigned_to']=='Municipal Animal Control' %}selected{% endif %}>Municipal
+                                Animal
+                                Control</option>
+                            <option value="Municipal Animal Control & Traffic Police" {% if
+                                complaint['assigned_to']=='Municipal Animal Control & Traffic Police' %}selected{% endif
+                                %}>
+                                Municipal Animal Control & Traffic Police</option>
+                        </select>
+                        <small class="text-muted">AI Routed this to: {{ complaint['assigned_to'] }}</small>
+                    </div>
+
+                    <div class="mb-3 border p-3 rounded bg-light">
+                        <label class="fw-bold mb-2"><i class="bi bi-cpu"></i> AI Emotional Intensity Analysis:</label>
+                        <div class="row g-2">
+                            {% for emotion, score in complaint.emotions.items() %}
+                            <div class="col-6">
+                                <small class="text-uppercase fw-bold" style="font-size: 0.7rem;">{{ emotion }}</small>
+                                <div class="progress" style="height: 6px;">
+                                    <div class="progress-bar {% if score > 0.7 %}bg-danger{% elif score > 0.4 %}bg-warning{% else %}bg-success{% endif %}"
+                                        role="progressbar" style="width: {{ score * 100 }}%"></div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if complaint['escalation_reason'] %}
+                        <div class="mt-3 alert alert-danger py-2 px-3 mb-0 small border-start border-4 border-danger">
+                            <strong><i class="bi bi-shield-exclamation"></i> AI Escalation Logic:</strong><br>
+                            {{ complaint['escalation_reason'] }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if complaint['attachment'] %}
+                    <div class="mb-3">
+                        <label class="fw-bold d-block mb-2"><i class="bi bi-camera"></i> Evidence Photo:</label>
+                        <a href="{{ url_for('static', filename='uploads/' + complaint['attachment']) }}"
+                            target="_blank">
+                            <img src="{{ url_for('static', filename='uploads/' + complaint['attachment']) }}"
+                                class="img-fluid rounded border shadow-sm" style="max-height: 250px; cursor: zoom-in;"
+                                alt="Evidence Photo">
+                        </a>
+                        <small class="text-muted d-block mt-1">Click image to view full size.</small>
+
+                        <!-- Authenticity Check (Step 7) -->
+                        <div class="mt-2">
+                            {% if complaint['is_authentic'] %}
+                            <span class="badge bg-success-subtle text-success border border-success">
+                                <i class="bi bi-patch-check-fill"></i> Verified Original
+                            </span>
+                            {% else %}
+                            <div
+                                class="alert alert-warning py-2 px-3 mt-2 mb-0 small border-start border-4 border-warning">
+                                <strong class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Suspicious
+                                    Evidence Detected</strong><br>
+                                <span class="text-dark">Trust Score: {{ complaint['authenticity'].get('trust_score', 0)
+                                    }}%</span>
+                                <ul class="mb-0 mt-1 ps-3">
+                                    {% for reason in complaint['authenticity'].get('reasons', []) %}
+                                    <li>{{ reason }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- AI Vision Results -->
+                    {% if complaint['vision_results'] %}
+                    <div class="mb-3 border p-3 rounded bg-light" style="border-left: 4px solid #0dcaf0 !important;">
+                        <label class="fw-bold mb-2"><i class="bi bi-eye-fill text-info"></i> AI Smart Vision
+                            Insights:</label>
+                        <div class="d-flex flex-wrap gap-2">
+                            {% for detection in complaint['vision_results'] %}
+                            <div
+                                class="badge bg-white text-dark border shadow-sm p-2 d-flex flex-column align-items-start">
+                                <div class="d-flex align-items-center mb-1">
+                                    <i class="bi bi-cpu-fill text-info me-2"></i>
+                                    <strong>{{ detection.label }}</strong>
+                                </div>
+                                <div class="small">
+                                    <span
+                                        class="{% if detection.severity == 'Emergency' %}text-danger fw-bold{% elif detection.severity == 'High' %}text-warning{% else %}text-muted{% endif %}">
+                                        Severity: {{ detection.severity }}
+                                    </span>
+                                    <br>
+                                    <span class="text-muted" style="font-size: 0.7rem;">
+                                        Confidence: {{ (detection.confidence * 100) | int }}% | Area: {{
+                                        detection.object_size }}%
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    <label class="fw-bold">Submitted On:</label>
+                    <p>{{ complaint['created_at'] }}</p>
+
+                    {% if complaint['attachment'] %}
+                    <div class="mb-3">
+                        <label class="fw-bold">Attachment:</label>
+                        <p>
+                            <a href="{{ url_for('static', filename='uploads/' + complaint['attachment']) }}"
+                                target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-paperclip"></i> View Attachment
+                            </a>
+                        </p>
+                    </div>
+                    {% endif %}
+
+                    {% if complaint['audio_file'] %}
+                    <div class="mb-4">
+                        <label class="fw-bold text-primary d-block mb-2">
+                            <i class="bi bi-mic-fill"></i> Voice Complaint Recording
+                        </label>
+                        <div class="bg-white p-3 rounded-3 border shadow-sm">
+                            <div class="d-flex align-items-center gap-3">
+                                <audio controls class="flex-grow-1" id="audio-admin-{{ complaint['id'] }}"
+                                    onloadedmetadata="document.getElementById('duration-{{ complaint['id'] }}').innerText = Math.round(this.duration) + 's'">
+                                    <source
+                                        src="{{ url_for('complaints.serve_audio', filename=complaint['audio_file']) }}">
+                                    Your browser does not support audio playback.
+                                </audio>
+                                <span class="badge bg-light text-dark border">
+                                    <i class="bi bi-clock"></i> <span id="duration-{{ complaint['id'] }}">--</span>
+                                </span>
+                                <a href="{{ url_for('complaints.serve_audio', filename=complaint['audio_file'], download=1) }}"
+                                    class="btn btn-sm btn-outline-primary" title="Download Audio">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                            </div>
+                            {% if complaint['transcript'] %}
+                            <div class="mt-3 pt-3 border-top bg-light-trans">
+                                <label class="text-primary small fw-bold text-uppercase d-block mb-1"><i
+                                        class="bi bi-robot"></i> AI Auto-Transcript:</label>
+                                <p class="mb-0 text-dark" style="font-size: 0.95rem;">{{ complaint['transcript'] }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label for="status{{ complaint['id'] }}" class="form-label fw-bold">
+                            Update Status <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="status{{ complaint['id'] }}" name="status" required>
+                            <option value="Pending" {% if complaint['status']=='Pending' %}selected{% endif %}>
+                                Pending</option>
+                            <option value="In Progress" {% if complaint['status']=='In Progress' %}selected{% endif %}>
+                                In Progress</option>
+                            <option value="Resolved" {% if complaint['status']=='Resolved' %}selected{% endif %}>
+                                Resolved</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="admin_response{{ complaint['id'] }}" class="form-label fw-bold">
+                            Admin Response
+                        </label>
+                        <textarea class="form-control" id="admin_response{{ complaint['id'] }}" name="admin_response"
+                            rows="4"
+                            placeholder="Enter your response to the user...">{{ complaint['admin_response'] if complaint['admin_response'] else '' }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Update Complaint
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- 🗑️ Delete Confirmation Modals -->
+{% for complaint in complaints %}
+<div class="modal fade" id="deleteModal-{{ complaint['id'] }}" tabindex="-1"
+    aria-labelledby="deleteModalLabel-{{ complaint['id'] }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold" id="deleteModalLabel-{{ complaint['id'] }}">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Delete Complaint #{{ complaint['id'] }}
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">You are about to <strong>permanently delete</strong> this complaint:</p>
+                <div class="alert alert-danger py-2 mb-3">
+                    <strong>#{{ complaint['id'] }} — {{ complaint['title'] }}</strong><br>
+                    <small class="text-muted">Submitted by <strong>{{ complaint['username'] }}</strong>
+                        on {{ complaint['created_at'][:10] }}</small>
+                </div>
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-exclamation-circle me-1"></i>
+                    This action <strong>cannot be undone</strong>. All associated evidence files will also be removed.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i> Cancel
+                </button>
+                <form method="POST"
+                    action="{{ url_for('complaints.delete_complaint', complaint_id=complaint['id']) }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3-fill me-1"></i> Yes, Delete Permanently
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    <div id="hazardToast" class="card shadow-lg border-danger" style="display: none; width: 350px;">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <span class="fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> CRITICAL HAZARD ALERT</span>
+            <button type="button" class="btn-close btn-close-white"
+                onclick="document.getElementById('hazardToast').style.display='none'"></button>
+        </div>
+        <div class="card-body">
+            <div class="d-flex gap-3 mb-3">
+                <img id="alertImage" src="" class="rounded border"
+                    style="width: 80px; height: 80px; object-fit: cover;">
+                <div>
+                    <h5 id="alertAnimal" class="mb-1 text-danger"></h5>
+                    <p id="alertLocation" class="small text-muted mb-0"></p>
+                    <span id="alertConfidence" class="badge bg-warning text-dark extra-small"></span>
+                </div>
+            </div>
+            <a id="viewComplaintBtn" href="#" class="btn btn-sm btn-outline-danger w-100">
+                <i class="bi bi-eye"></i> View Complaint #<span id="alertId"></span>
+            </a>
+        </div>
+    </div>
+
+    {% endblock %}
+
+    {% block extra_js %}
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // --- STEP 3: Initialize Live Coal Mining Map ---
+            // Centered over Central-Eastern India Coalfields
+            const map = L.map('live-hazard-map').setView([22.5, 82.5], 6);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors | MineGuard CoalGov Spatial'
+            }).addTo(map);
+
+            const allMapMarkers = [];
+
+            // Custom Leaflet Icons for Coal Mines & Hazards
+            const ocpMineIcon = L.divIcon({
+                className: 'custom-mine-icon',
+                html: '<div style="background:#2563eb; color:white; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:2px solid white; box-shadow:0 3px 8px rgba(0,0,0,0.3); font-size:16px;"><i class="bi bi-building"></i></div>',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            const ugMineIcon = L.divIcon({
+                className: 'custom-ug-icon',
+                html: '<div style="background:#7c3aed; color:white; border-radius:50%; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:2px solid white; box-shadow:0 3px 8px rgba(0,0,0,0.3); font-size:16px;"><i class="bi bi-layers-half"></i></div>',
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+
+            const hazardIcon = L.icon({
+                iconUrl: 'https://cdn-icons-png.flaticon.com/512/564/564619.png',
+                iconSize: [32, 32],
+                className: 'custom-marker-hazard'
+            });
+
+            // 1. PLOT ALL COAL MINING LOCATIONS
+            const coalMines = {{ mines | tojson if mines else [] }};
+            coalMines.forEach(function(mine) {
+                if (mine.latitude && mine.longitude) {
+                    const isUG = mine.mine_type && mine.mine_type.includes('Underground');
+                    const mineMarker = L.marker([mine.latitude, mine.longitude], {
+                        icon: isUG ? ugMineIcon : ocpMineIcon
+                    });
+
+                    const popupHtml = `
+                        <div style="min-width: 220px; font-family: system-ui, sans-serif;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="badge ${isUG ? 'bg-purple text-white' : 'bg-primary'}" style="background:${isUG ? '#7c3aed' : '#2563eb'}; color:white; font-size:11px; padding:3px 6px; border-radius:4px;">${mine.subsidiary}</span>
+                                <span class="badge" style="background:#dcfce7; color:#166534; font-size:11px; padding:3px 6px; border-radius:4px;">⭐ ${mine.safety_rating || 4.5}/5.0</span>
+                            </div>
+                            <h6 style="margin:4px 0 2px 0; font-weight:700; color:#0f172a; font-size:14px;">${mine.name}</h6>
+                            <p style="font-size:12px; color:#64748b; margin-bottom:6px;">${mine.area || 'Coalfield'} | <strong>${mine.mine_type}</strong></p>
+                            
+                            <div style="background:#f8fafc; padding:6px 8px; border-radius:6px; font-size:11px; margin-bottom:8px; border:1px solid #e2e8f0;">
+                                <div><strong>Compliance:</strong> <span style="color:#16a34a; font-weight:700;">${mine.compliance_score || 85.0}%</span></div>
+                                <div><strong>Capacity:</strong> ${mine.ec_capacity_mtpa || 0} MTPA</div>
+                                <div><strong>Safety Officer:</strong> ${mine.safety_officer || 'Safety Head'}</div>
+                            </div>
+                            <a href="/governance/dashboard?mine_id=${mine.id}" class="btn btn-sm btn-primary w-100" style="font-size:11px; padding:4px 8px; background:#2563eb; color:white; text-decoration:none; text-align:center; display:block; border-radius:4px;">View Colliery Command</a>
+                        </div>
+                    `;
+
+                    mineMarker.bindPopup(popupHtml);
+                    mineMarker.addTo(map);
+                    allMapMarkers.push(mineMarker);
+                }
+            });
+
+            // 2. PLOT COMPLAINTS & INCIDENTS
+            const markers = {};
+            function addMarker(complaint) {
+                if (!complaint.latitude || !complaint.longitude) return;
+
+                const isHazard = complaint.priority === 'Emergency';
+                const marker = L.marker([complaint.latitude, complaint.longitude], {
+                    icon: isHazard ? hazardIcon : new L.Icon.Default()
+                });
+
+                const popupContent = `
+                <div style="width: 200px">
+                    <h6 style="font-weight:700; font-size:13px;">#${complaint.id}: ${complaint.title || 'Hazard Report'}</h6>
+                    <span class="badge ${isHazard ? 'bg-danger' : 'bg-primary'} mb-2" style="font-size:11px;">${complaint.category}</span>
+                    <p class="small text-muted mb-2" style="font-size:11px;">${(complaint.description || '').substring(0, 80)}...</p>
+                    <a href="/admin/dashboard?search=${complaint.id}" class="btn btn-sm btn-outline-primary w-100" style="font-size:11px;">View Details</a>
+                </div>
+            `;
+
+                marker.bindPopup(popupContent);
+                marker.addTo(map);
+                markers[complaint.id] = marker;
+                allMapMarkers.push(marker);
+
+                if (isHazard) {
+                    marker.openPopup();
+                }
+            }
+
+            // Add existing complaints to map
+            const initialComplaints = {{ complaints | tojson if complaints else [] }};
+            initialComplaints.forEach(addMarker);
+
+            // Auto-fit map bounds across all mines and hazards
+            if (allMapMarkers.length > 0) {
+                const group = new L.featureGroup(allMapMarkers);
+                map.fitBounds(group.getBounds().pad(0.08));
+            }
+            window.focusMine = function(lat, lon, name) {
+                if (lat && lon) {
+                    map.flyTo([lat, lon], 11, { animate: true, duration: 1.2 });
+                }
+            };
+
+        // --- STEP 4: Initialize Dynamic Presence ---
+        const citizenMarkers = {};
+        const workerMarkers = {};
+
+        const workerIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png', // Worker icon
+            iconSize: [30, 30]
+        });
+
+        const activeCitizenIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/9334/9334612.png', // Living person icon
+            iconSize: [25, 25],
+            className: 'pulse-blue'
+        });
+
+        function updateCitizenMarker(data) {
+            if (citizenMarkers[data.user_id]) {
+                citizenMarkers[data.user_id].setLatLng([data.lat, data.lon]);
+            } else {
+                const marker = L.marker([data.lat, data.lon], { icon: activeCitizenIcon })
+                    .bindPopup(`<b>${data.username}</b> (Live Location)`)
+                    .addTo(map);
+                citizenMarkers[data.user_id] = marker;
+            }
+        }
+
+        // Initialize citizens on map (from MongoDB)
+        const initialCitizens = {{ citizen_locations | tojson }};
+        initialCitizens.forEach(c => {
+            updateCitizenMarker(c);
+        });
+
+        // Initialize technicians on map
+        const initialWorkers = {{ technicians | tojson }};
+        initialWorkers.forEach(w => {
+            if (w.latitude && w.longitude) {
+                const marker = L.marker([w.latitude, w.longitude], { icon: workerIcon })
+                    .bindPopup(`<b>Field Unit: ${w.name}</b><br>Skill: ${w.skill}<br>Status: Active`)
+                    .addTo(map);
+                workerMarkers[w.id] = marker;
+            }
+        });
+
+        // Initialize Socket.IO
+        const socket = io();
+
+        // Listen for Real-time Movement
+        socket.on('citizen_location_update', function (data) {
+            console.log("[Presence] Citizen moving:", data);
+            updateCitizenMarker(data);
+        });
+
+        // Listen for Worker Notifications (Dispatch Simulation)
+        socket.on('worker_notification', function (data) {
+            console.log("[Dispatch] Worker notified:", data);
+            const marker = workerMarkers[data.worker_id];
+            if (marker) {
+                marker.bindPopup(`${marker.getPopup().getContent()}<br><span class="text-danger fw-bold">Task: ${data.message}</span>`).openPopup();
+            }
+        });
+
+        // Listen for animal hazard alerts
+        let hazardCount = 0;
+        socket.on('animal_hazard_detected', function (data) {
+            console.log("Real-time hazard detected:", data);
+
+            // 0. Update Live Map
+            if (data.latitude && data.longitude) {
+                // Ensure priority is set for icon selection
+                data.priority = data.is_urgent ? 'Emergency' : 'High';
+                addMarker(data);
+                if (markers[data.complaint_id]) {
+                    markers[data.complaint_id].openPopup();
+                    map.setView([data.latitude, data.longitude], 15);
+                }
+            }
+
+            // 1. Update UI Counts
+            hazardCount++;
+            document.getElementById('hazard-count').textContent = hazardCount;
+            document.getElementById('hazard-count').classList.add('text-danger', 'pulse-red');
+
+            // 2. Play Synthetic Alert Sound (Web Audio API)
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.2);
+            } catch (e) { console.warn("Audio Context failed", e); }
+
+            // 3. Populate toast data
+            document.getElementById('alertId').textContent = data.complaint_id;
+            document.getElementById('alertAnimal').textContent = data.detected_animal;
+            document.getElementById('alertLocation').innerHTML = `<i class="bi bi-geo-alt-fill"></i> ${data.location}`;
+            document.getElementById('alertConfidence').textContent = `AI Confidence: ${Math.round(data.confidence * 100)}%`;
+            document.getElementById('alertImage').src = data.image_url;
+            document.getElementById('viewComplaintBtn').href = `/admin/dashboard?search=${data.complaint_id}`;
+
+            // 4. Highlight target row if exists
+            const row = document.getElementById(`complaint-row-${data.complaint_id}`);
+            if (row) {
+                row.classList.add('hazard-row-highlight');
+                row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            // 5. Show toast/card
+            const toast = document.getElementById('hazardToast');
+            toast.style.display = 'block';
+        });
+
+        // Store the initial count provided by the server-side template
+        let currentTotal = parseInt("{{ stats.total }}");
+
+        // 1. Category Chart
+        const catCtx = document.getElementById('categoryChart').getContext('2d');
+        new Chart(catCtx, {
+            type: 'doughnut',
+            data: {
+                labels: {{ category_stats.keys() | list | tojson }},
+            datasets: [{
+                data: {{ category_stats.values() | list | tojson }},
+            backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#6c757d', '#dc3545', '#0dcaf0', '#6610f2', '#fd7e14', '#20c997'],
+            borderWidth: 0
+            }]
+        },
+            options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+
+        // 2. Status Chart
+        const statusCtx = document.getElementById('statusChart').getContext('2d');
+        new Chart(statusCtx, {
+            type: 'bar',
+            data: {
+                labels: {{ status_stats.keys() | list | tojson }},
+            datasets: [{
+                label: 'Complaints',
+                data: {{ status_stats.values() | list | tojson }},
+            backgroundColor: ['#ffc107', '#0dcaf0', '#198754'],
+            borderRadius: 5
+            }]
+        },
+            options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { display: false } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+
+        // Initialize Map Viewers for each Complaint Modal
+        {% if complaints %}
+        {% for complaint in complaints %}
+        {% if complaint['latitude'] and complaint['longitude'] %}
+        new GoogleMapsLocationViewer({
+            mapId: 'admin-map-{{ complaint.id }}',
+            lat: {{ complaint['latitude'] }},
+            lng: {{ complaint['longitude'] }},
+            title: {{ complaint['title']|tojson }},
+            address: {{ (complaint['location'] or complaint['city'])|tojson }},
+            placeId: {{ (complaint['google_place_id'] or '')|tojson }},
+            modalId: 'updateModal-{{ complaint.id }}',
+            directionsBtnId: 'admin-directions-btn-{{ complaint.id }}'
+        });
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+
+        // Poll for updates every 5 seconds
+        setInterval(function () {
+            fetch("{{ url_for('complaints.get_stats') }}")
+                .then(response => {
+                    if (response.ok) return response.json();
+                    throw new Error('Network response was not ok');
+                })
+                .then(data => {
+                    if (data.total > currentTotal) {
+                        window.location.reload();
+                    }
+                })
+                .catch(error => console.error('Error polling for updates:', error));
+        }, 5000);
+});
+    </script>
+    {% endblock %}

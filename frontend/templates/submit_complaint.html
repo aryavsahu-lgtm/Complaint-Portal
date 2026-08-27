@@ -1,0 +1,467 @@
+{% extends "base.html" %}
+
+{% block title %}Report Incident - MineGuard Compliance Command{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="bi bi-shield-exclamation"></i> Report Safety or Compliance Case</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('complaints.submit_complaint') }}" enctype="multipart/form-data">
+                    <div class="alert alert-primary mb-4 p-4 rounded-4 shadow-sm border-0"
+                        style="background: linear-gradient(135deg, #f0f7ff 0%, #e0efff 100%);">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-grow-1">
+                                <h5 class="alert-heading mb-1 text-primary fw-bold"><i class="bi bi-mic-fill"></i> Voice
+                                    Complaint Recorder</h5>
+                                <p class="mb-0 text-muted small">Record your complaint directly. Your voice helps us
+                                    understand priority better.</p>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" id="record-btn"
+                                    class="btn btn-primary rounded-pill px-4 shadow-sm">
+                                    <i class="bi bi-mic"></i> Start Recording
+                                </button>
+                                <button type="button" id="stop-btn"
+                                    class="btn btn-danger rounded-pill px-4 shadow-sm d-none">
+                                    <i class="bi bi-stop-fill"></i> Stop
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Visualizer Container -->
+                        <div id="visualizer-container" class="bg-white rounded-3 p-2 mb-3 d-none border">
+                            <canvas id="waveform" height="60" class="w-100"></canvas>
+                        </div>
+
+                        <!-- Playback & Controls -->
+                        <div id="playback-container" class="d-none animate-fade-in">
+                            <div class="d-flex align-items-center gap-3 bg-white p-3 rounded-3 border">
+                                <audio id="audio-playback" controls class="flex-grow-1"></audio>
+                                <button type="button" id="reset-record" class="btn btn-sm btn-outline-danger border-0">
+                                    <i class="bi bi-trash"></i> Retake
+                                </button>
+                            </div>
+                            <div class="mt-2 small text-success">
+                                <i class="bi bi-check-circle-fill"></i> Recording ready! It will be uploaded with your
+                                complaint.
+                            </div>
+                        </div>
+
+                        <div class="mt-2 text-center">
+                            <span id="voice-status" class="badge bg-light text-dark status-badge display-none"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label">
+                            <i class="bi bi-pencil"></i> Case Title <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="title" name="title"
+                            placeholder="Brief summary of the safety or compliance issue" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="location" class="form-label fw-bold mb-0">
+                                <i class="bi bi-geo-alt-fill text-danger"></i> Mine Area / Property Address / Pit Zone <span class="text-danger">*</span>
+                            </label>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm" id="btn-current-location">
+                                <i class="bi bi-crosshair me-1"></i> Use My Current Location
+                            </button>
+                        </div>
+                        <div class="input-group shadow-sm">
+                            <span class="input-group-text bg-white border-end-0 text-primary">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0 ps-0" id="location" name="location"
+                                placeholder="Type address or zone (e.g., Open Cast Pit 2, North Bench, Raipur)..." autocomplete="off" required>
+                            <button type="button" class="btn btn-outline-secondary bg-white border-start-0 text-muted" id="btn-clear-location" title="Clear Address">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                            <span class="input-group-text bg-white border-start-0" id="live-location-badge">
+                                <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                            </span>
+                        </div>
+
+                        <!-- Location Error / Alert Container -->
+                        <div id="location-error-alert" class="d-none"></div>
+
+                        <!-- Live Status Bar -->
+                        <div class="d-flex justify-content-between align-items-center mt-2 small">
+                            <div id="location-help" class="form-text mt-0">
+                                <i class="bi bi-broadcast text-primary me-1"></i> Status: <span id="location-status-text" class="text-muted">Enter address or click Use My Current Location...</span>
+                            </div>
+                            <span class="badge bg-light text-secondary border d-none d-md-inline-block">
+                                <i class="bi bi-pin-map text-danger me-1"></i> Draggable Pin
+                            </span>
+                        </div>
+
+                        <!-- Interactive Google Map Preview Container -->
+                        <!-- Loading overlay shown until Google Maps initializes -->
+                        <div id="location-map-wrapper" class="mt-2 position-relative" style="height: 300px;">
+                            <div id="location-map-loading" class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-light rounded-3 border" style="z-index:1;">
+                                <div class="text-center text-muted">
+                                    <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                    <span id="location-map-loading-text">Loading Google Maps...</span>
+                                </div>
+                            </div>
+                            <div class="location-map-container shadow-sm" id="location-map" style="height: 300px;"></div>
+                        </div>
+                        <!-- Auth failure notice (shown if API key is invalid) -->
+                        <div class="gmaps-auth-notice d-none alert alert-warning py-2 mt-2 small rounded-3">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            <strong>Google Maps unavailable:</strong> Check your <code>GOOGLE_MAPS_API_KEY</code> in <code>.env</code> and ensure <em>Maps JavaScript API</em>, <em>Places API</em>, and <em>Geocoding API</em> are enabled in Google Cloud Console. You can still enter an address manually and submit.
+                        </div>
+                        <div class="form-text small text-muted mt-1">
+                            <i class="bi bi-info-circle me-1"></i> You can drag the red marker pin or click anywhere on the map to pinpoint the exact property/incident coordinates.
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="city" class="form-label fw-bold">
+                            <i class="bi bi-building"></i> Mine Site / Operating Unit <span
+                                class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="city" name="city" required>
+                            <option value="" selected disabled>Select mine site or operating unit</option>
+                            <option value="Open Cast Mine">Open Cast Mine</option>
+                            <option value="Underground Mine">Underground Mine</option>
+                            <option value="Coal Handling Plant">Coal Handling Plant</option>
+                            <option value="Workshop & Maintenance">Workshop & Maintenance</option>
+                            <option value="Mine Colony">Mine Colony</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="category" class="form-label fw-bold">
+                            <i class="bi bi-grid-fill"></i> Case Classification <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="category" name="category" required>
+                            <option value="" selected disabled>Select compliance or operational area</option>
+                            <option value="Occupational Safety">Occupational Safety</option>
+                            <option value="Mine Operations">Mine Operations</option>
+                            <option value="Ventilation & Gas Monitoring">Ventilation & Gas Monitoring</option>
+                            <option value="Electrical & Mechanical">Electrical & Mechanical</option>
+                            <option value="Environmental Compliance">Environmental Compliance</option>
+                            <option value="Labor Welfare">Labor Welfare</option>
+                            <option value="Regulatory Compliance">Regulatory Compliance</option>
+                            <option value="Community & Land Relations">Community & Land Relations</option>
+                            <option value="Other">Other Case</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="priority" class="form-label">
+                            <i class="bi bi-exclamation-triangle"></i> Priority <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="priority" name="priority" required>
+                            <option value="Low">Low - Can wait a bit</option>
+                            <option value="Medium" selected>Medium - Needs attention</option>
+                            <option value="High">High - Urgent issue</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="upload_key" class="form-label">
+                            <i class="bi bi-key"></i> Upload Key <span class="text-muted small">(Optional)</span>
+                        </label>
+                        <input type="text" class="form-control" id="upload_key" name="upload_key"
+                            placeholder="Enter secure upload key if available">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="attachment" class="form-label">
+                            <i class="bi bi-camera"></i> Upload Evidence Photo
+                        </label>
+                        <div class="input-group">
+                            <input class="form-control" type="file" id="attachment" name="attachment"
+                                accept=".jpg,.jpeg,.png" onchange="previewImage(this)">
+                            <button type="button" class="btn btn-outline-primary" id="start-camera-btn">
+                                <i class="bi bi-camera-fill"></i> Live Photo
+                            </button>
+                        </div>
+                        <div class="form-text">Supported formats: JPG, PNG. Max size: 5MB. GPS location will be stamped
+                            on the live photo.</div>
+
+                        <!-- Image Preview Container -->
+                        <div id="image-preview-container" class="mt-3 d-none">
+                            <div class="position-relative d-inline-block">
+                                <img id="image-preview" src="#" alt="Preview" class="img-thumbnail"
+                                    style="max-height: 200px;">
+                                <button type="button"
+                                    class="btn btn-sm btn-danger position-absolute top-0 start-100 translate-middle rounded-circle"
+                                    onclick="clearPreview()" style="width: 24px; height: 24px; padding: 0;">
+                                    <i class="bi bi-x" style="font-size: 1.2rem; line-height: 1;"></i>
+                                </button>
+                            </div>
+                            <div id="gps-status" class="small text-muted mt-1"></div>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="assigned_to" name="assigned_to" value="General Administration">
+                    <input type="hidden" id="sentiment_score" name="sentiment_score" value="0.5">
+                    <input type="hidden" id="is_escalated" name="is_escalated" value="0">
+                    <input type="hidden" id="worker_id" name="worker_id" value="">
+                    <input type="hidden" id="emotion_data" name="emotion_data" value="">
+                    <input type="hidden" id="escalation_reason" name="escalation_reason" value="">
+
+                    <!-- Location Coordinates & Place ID Fields -->
+                    <input type="hidden" id="input-latitude" name="latitude" value="">
+                    <input type="hidden" id="input-longitude" name="longitude" value="">
+                    <input type="hidden" id="input-place-id" name="google_place_id" value="">
+                    <input type="hidden" id="browser_lat" name="browser_lat" value="">
+                    <input type="hidden" id="browser_lon" name="browser_lon" value="">
+                    <input type="file" id="audio-data" name="audio_file" class="d-none">
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">
+                            <i class="bi bi-file-text"></i> Description <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="description" name="description" rows="6"
+                            placeholder="Provide detailed information about your complaint..." required></textarea>
+                        <div class="form-text">Please provide as much detail as possible to help us resolve your
+                            issue
+                            quickly.</div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check p-3 border rounded-3 bg-light">
+                            <input class="form-check-input ms-0" type="checkbox" value="" id="consentCheckbox" required>
+                            <label class="form-check-label ms-2 small text-muted" for="consentCheckbox">
+                                I consent to the storage of my voice recording for complaint verification purposes.
+                                I
+                                understand that the recording is stored securely and processed by an AI for
+                                prioritization.
+                                <span class="text-danger">*</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info py-2 small">
+                        <i class="bi bi-info-circle-fill"></i>
+                        <strong>Official Notice:</strong> Your grievance will be automatically routed to the
+                        concerned
+                        department via AI.
+                        Tracking is available on your dashboard.
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('complaints.user_dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Submit Complaint
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-camera-fill"></i> Take Evidence Photo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="position-relative bg-dark" style="min-height: 300px;">
+                    <video id="camera-video" autoplay playsinline class="w-100 h-100"
+                        style="object-fit: cover; max-height: 400px;"></video>
+                    <canvas id="camera-canvas" class="d-none"></canvas>
+                    <div id="camera-overlay"
+                        class="position-absolute bottom-0 start-0 w-100 p-2 text-white bg-dark bg-opacity-75 small">
+                        Wait for GPS...
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary rounded-pill px-4" id="capture-btn">
+                    <i class="bi bi-record-circle"></i> Capture Photo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/voice_input.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize the Audio Recorder Module
+        const audioRecorder = new AudioRecorderModule({
+            recordBtnId: 'record-btn',
+            stopBtnId: 'stop-btn',
+            playbackId: 'audio-playback',
+            waveformId: 'waveform',
+            statusId: 'voice-status',
+            containerId: 'playback-container',
+            visualizerId: 'visualizer-container',
+            resetId: 'reset-record',
+            inputName: 'audio_file'
+        });
+
+        // --- Camera Logic ---
+        const cameraBtn = document.getElementById('start-camera-btn');
+        let cameraModal = null; // Will be initialized on click
+        const video = document.getElementById('camera-video');
+        const canvas = document.getElementById('camera-canvas');
+        const captureBtn = document.getElementById('capture-btn');
+        const overlay = document.getElementById('camera-overlay');
+        const modalEl = document.getElementById('cameraModal');
+        let stream = null;
+        let currentLat = null;
+        let currentLon = null;
+
+        cameraBtn.addEventListener('click', async () => {
+            // Initialize Modal instance if not already
+            if (!cameraModal) {
+                cameraModal = new bootstrap.Modal(modalEl);
+            }
+
+            try {
+                // Request camera access
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                video.srcObject = stream;
+                cameraModal.show();
+
+                // Start tracking GPS for the photo
+                startGPSLocation();
+            } catch (err) {
+                console.error("Camera error:", err);
+                alert("Could not access camera. Please allow camera permissions.");
+            }
+        });
+
+        // Stop camera when modal closes
+        modalEl.addEventListener('hidden.bs.modal', stopCamera);
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        }
+
+        function startGPSLocation() {
+            overlay.innerText = "Locating GPS...";
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(position => {
+                    currentLat = position.coords.latitude.toFixed(6);
+                    currentLon = position.coords.longitude.toFixed(6);
+                    overlay.innerHTML = `<i class="bi bi-geo-alt-fill text-success"></i> GPS Active: ${currentLat}, ${currentLon}`;
+
+                    // Also update hidden form fields
+                    document.getElementById('browser_lat').value = position.coords.latitude;
+                    document.getElementById('browser_lon').value = position.coords.longitude;
+                }, error => {
+                    overlay.innerText = "GPS Error: " + error.message;
+                    console.warn("GPS tag error", error);
+                }, { enableHighAccuracy: true, timeout: 5000 });
+            } else {
+                overlay.innerText = "GPS not supported on this device";
+            }
+        }
+
+        captureBtn.addEventListener('click', () => {
+            if (!video.videoWidth) return;
+
+            const context = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // 1. Draw video frame
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // 2. Overlay GPS Data
+            const timestamp = new Date().toLocaleString();
+            const gpsText = currentLat ? `GPS: ${currentLat}, ${currentLon}` : "GPS: N/A";
+
+            // Metadata bar background
+            context.fillStyle = "rgba(0, 0, 0, 0.6)";
+            context.fillRect(0, canvas.height - 50, canvas.width, 50);
+
+            // Text settings
+            context.fillStyle = "white";
+            context.font = "bold 16px Arial";
+            context.textAlign = "left";
+            context.textBaseline = "middle";
+
+            // Draw text
+            context.fillText(gpsText, 20, canvas.height - 35);
+            context.font = "14px Arial";
+            context.fillText(timestamp, 20, canvas.height - 15);
+
+            // 3. Convert to File and set input
+            canvas.toBlob(blob => {
+                const file = new File([blob], `evidence_${Date.now()}.jpg`, { type: "image/jpeg" });
+
+                // Use DataTransfer to set the file input value programmatically
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                document.getElementById('attachment').files = dataTransfer.files;
+
+                // Trigger preview
+                previewImage(document.getElementById('attachment'));
+
+                // Close modal
+                cameraModal.hide();
+                stopCamera();
+            }, 'image/jpeg', 0.9); // 90% quality
+        });
+    });
+
+        // Initialize Google Maps Location Picker (Places Autocomplete, Draggable Marker, Reverse Geocoding, Geolocation)
+        const locationPicker = new GoogleMapsLocationPicker({
+            inputId: 'location',
+            mapId: 'location-map',
+            latInputId: 'input-latitude',
+            lonInputId: 'input-longitude',
+            placeIdInputId: 'input-place-id',
+            statusId: 'location-status-text',
+            badgeId: 'live-location-badge',
+            locateBtnId: 'btn-current-location',
+            clearBtnId: 'btn-clear-location',
+            errorContainerId: 'location-error-alert'
+        });
+
+    function previewImage(input) {
+        const container = document.getElementById('image-preview-container');
+        const preview = document.getElementById('image-preview');
+        const gpsStatus = document.getElementById('gps-status');
+
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+                container.classList.remove('d-none');
+
+                // Check if browser Lat/Lon is present
+                const lat = document.getElementById('browser_lat').value;
+                if (lat) {
+                    gpsStatus.innerHTML = `<i class="bi bi-geo-alt-fill text-success"></i> Location Tagged from Device`;
+                } else {
+                    gpsStatus.innerHTML = `<span class="text-warning">Waiting for Location...</span>`;
+                }
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function clearPreview() {
+        const input = document.getElementById('attachment');
+        const container = document.getElementById('image-preview-container');
+        const preview = document.getElementById('image-preview');
+
+        input.value = '';
+        preview.src = '#';
+        container.classList.add('d-none');
+    }
+</script>
+{% endblock %}

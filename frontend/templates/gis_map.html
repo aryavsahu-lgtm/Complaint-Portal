@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}Interactive GIS Mine Spatial Visualizer | MineGuard CoalGov{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<style>
+    #mineGisMap {
+        height: 650px;
+        width: 100%;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+        border: 1px solid #cbd5e1;
+    }
+    .gis-sidebar {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #e2e8f0;
+        height: 650px;
+        overflow-y: auto;
+    }
+    .mine-gis-item {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .mine-gis-item:hover {
+        background: #f8fafc;
+        border-color: #3b82f6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('governance.dashboard') }}" class="text-decoration-none text-muted small">
+                    <i class="bi bi-arrow-left me-1"></i> Command Center
+                </a>
+                <span class="text-muted">/</span>
+                <span class="badge bg-primary">GIS Spatial Monitoring</span>
+            </div>
+            <h2 class="fw-bold text-dark mb-0">Interactive GIS Mine Spatial Visualizer</h2>
+            <p class="text-muted mb-0">Real-time geospatial mapping of coal leaseholds, active open-cast pits, underground shafts, telemetry stations, and hazard pins.</p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('governance.field_inspection') }}" class="btn btn-warning fw-semibold shadow-sm">
+                <i class="bi bi-pin-map-fill me-1"></i> Log Geo-Tagged Pin
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        
+        <!-- Left: GIS Map View -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 p-2">
+                <div id="mineGisMap"></div>
+            </div>
+        </div>
+
+        <!-- Right: Mine & Hazard Directory Sidebar -->
+        <div class="col-lg-4">
+            <div class="gis-sidebar shadow-sm">
+                <h5 class="fw-bold text-dark mb-3"><i class="bi bi-layers-half me-2 text-primary"></i>Connected Mine Sites</h5>
+                
+                {% for m in mines %}
+                <div class="mine-gis-item" onclick="flyToMine({{ m.latitude }}, {{ m.longitude }}, '{{ m.name }}')">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                        <span class="badge bg-secondary">{{ m.subsidiary }}</span>
+                        <span class="badge {% if m.compliance_score >= 90 %}bg-success{% else %}bg-info{% endif %}">{{ m.compliance_score }}% Compliance</span>
+                    </div>
+                    <div class="fw-bold text-dark">{{ m.name }}</div>
+                    <div class="small text-muted">{{ m.area }} | <strong>{{ m.mine_type }}</strong></div>
+                    <div class="small text-muted mt-1 font-monospace"><i class="bi bi-geo-alt me-1"></i>{{ m.latitude }}, {{ m.longitude }}</div>
+                </div>
+                {% endfor %}
+
+                <h6 class="fw-bold text-dark mt-4 mb-2"><i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Recent Field Hazard Pins</h6>
+                {% for insp in inspections[:3] %}
+                <div class="p-2 border rounded-3 bg-light mb-2 small" onclick="flyToMine({{ insp.latitude }}, {{ insp.longitude }}, '{{ insp.violation_title }}')">
+                    <span class="badge {% if insp.risk_level == 'Critical' %}bg-danger{% else %}bg-warning text-dark{% endif %} me-1">{{ insp.risk_level }}</span>
+                    <strong>{{ insp.violation_title }}</strong>
+                    <div class="text-muted">{{ insp.location_pit_seam }} ({{ insp.mine_name }})</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Initialize Map centered over Central India coalfields (Korba / Bilaspur region)
+        const map = L.map('mineGisMap').setView([22.3385, 82.5925], 6);
+
+        // OpenStreetMap Layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap | MineGuard CoalGov Spatial Gateway'
+        }).addTo(map);
+
+        // Mines Data
+        const mines = {{ mines|tojson }};
+        const inspections = {{ inspections|tojson }};
+
+        // Add Mine Markers
+        mines.forEach(m => {
+            const popupContent = `
+                <div style="font-family: sans-serif; min-width: 200px;">
+                    <span class="badge bg-primary" style="background:#1e3a8a; color:#fff; padding:2px 6px; border-radius:4px;">${m.subsidiary}</span>
+                    <h6 style="margin:6px 0 2px 0; font-weight:bold;">${m.name}</h6>
+                    <div style="font-size:12px; color:#64748b;">${m.area} (${m.mine_type})</div>
+                    <div style="font-size:12px; margin-top:4px;"><strong>Capacity:</strong> ${m.ec_capacity_mtpa} MTPA</div>
+                    <div style="font-size:12px;"><strong>Compliance Score:</strong> ${m.compliance_score}%</div>
+                    <div style="font-size:12px;"><strong>Safety Officer:</strong> ${m.safety_officer}</div>
+                </div>
+            `;
+            L.marker([m.latitude, m.longitude]).addTo(map).bindPopup(popupContent);
+        });
+
+        // Add Field Inspection Pins
+        inspections.forEach(insp => {
+            if (insp.latitude && insp.longitude) {
+                const circle = L.circleMarker([insp.latitude, insp.longitude], {
+                    color: insp.risk_level === 'Critical' ? '#ef4444' : '#f59e0b',
+                    fillColor: insp.risk_level === 'Critical' ? '#ef4444' : '#f59e0b',
+                    fillOpacity: 0.7,
+                    radius: insp.risk_level === 'Critical' ? 10 : 7
+                }).addTo(map);
+
+                circle.bindPopup(`
+                    <div style="font-family: sans-serif;">
+                        <span style="color:#ef4444; font-weight:bold; font-size:11px;">[HAZARD PIN] ${insp.risk_level.toUpperCase()}</span>
+                        <h6 style="margin:4px 0 2px 0; font-weight:bold;">${insp.violation_title}</h6>
+                        <div style="font-size:12px; color:#64748b;">${insp.location_pit_seam}</div>
+                        <div style="font-size:11px; margin-top:4px;">${insp.description}</div>
+                    </div>
+                `);
+            }
+        });
+
+        window.flyToMine = function(lat, lon, name) {
+            map.flyTo([lat, lon], 12, { animate: true, duration: 1.5 });
+        };
+    });
+</script>
+{% endblock %}

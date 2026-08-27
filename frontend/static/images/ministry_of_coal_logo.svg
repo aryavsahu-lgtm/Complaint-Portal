@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="80" height="80">
+  <defs>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFD700"/>
+      <stop offset="100%" stop-color="#FFA500"/>
+    </linearGradient>
+    <linearGradient id="coalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2c3e50"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer Gold Ring -->
+  <circle cx="120" cy="120" r="114" fill="#ffffff" stroke="url(#goldGrad)" stroke-width="6"/>
+  <circle cx="120" cy="120" r="104" fill="#0a2540" stroke="#FFD700" stroke-width="2"/>
+  
+  <!-- Crossed Mining Pickaxes -->
+  <g transform="translate(120, 115) scale(0.75)">
+    <!-- Pickaxe 1 -->
+    <rect x="-6" y="-70" width="12" height="140" rx="4" fill="#e2e8f0" transform="rotate(45)"/>
+    <path d="M -60 -50 Q 0 -90 60 -50 Q 55 -35 0 -55 Q -55 -35 -60 -50 Z" fill="url(#goldGrad)" transform="rotate(45)"/>
+    
+    <!-- Pickaxe 2 -->
+    <rect x="-6" y="-70" width="12" height="140" rx="4" fill="#e2e8f0" transform="rotate(-45)"/>
+    <path d="M -60 -50 Q 0 -90 60 -50 Q 55 -35 0 -55 Q -55 -35 -60 -50 Z" fill="url(#goldGrad)" transform="rotate(-45)"/>
+    
+    <!-- Central Mining Lamp & Coal Crystal -->
+    <polygon points="0,-30 25,0 0,30 -25,0" fill="#FFD700" stroke="#ffffff" stroke-width="2"/>
+    <circle cx="0" cy="0" r="8" fill="#ff4500"/>
+  </g>
+  
+  <!-- Circular Text -->
+  <path id="textPathTop" d="M 30,120 A 90,90 0 0,1 210,120" fill="none"/>
+  <path id="textPathBottom" d="M 210,120 A 90,90 0 0,1 30,120" fill="none"/>
+  
+  <text font-family="'Arial', sans-serif" font-weight="bold" font-size="12" fill="#ffffff" letter-spacing="1">
+    <textPath href="#textPathTop" startOffset="50%" text-anchor="middle">
+      MINISTRY OF COAL &amp; MINES
+    </textPath>
+  </text>
+  <text font-family="'Arial', sans-serif" font-weight="bold" font-size="11" fill="#FFD700" letter-spacing="2">
+    <textPath href="#textPathBottom" startOffset="50%" text-anchor="middle">
+      GOVT. OF INDIA • DGMS
+    </textPath>
+  </text>
+</svg>

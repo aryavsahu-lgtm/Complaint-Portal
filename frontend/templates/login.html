@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.login }} - {{ t.portal_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .auth-page-wrapper {
+        min-height: calc(100vh - 120px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1.5rem;
+        background: radial-gradient(circle at top right, rgba(13, 110, 253, 0.07), rgba(255, 193, 7, 0.05), transparent 70%);
+    }
+    .auth-container-box {
+        width: 100%;
+        max-width: 1160px;
+    }
+    .role-tab-btn {
+        transition: all 0.2s ease-in-out;
+        font-size: 0.88rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    .role-tab-btn:hover {
+        transform: translateY(-2px);
+    }
+    .demo-login-btn {
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        padding: 10px 14px;
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        background: white;
+    }
+    .demo-login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+    }
+    @media (max-width: 991.98px) {
+        .auth-left-panel {
+            border-radius: 1.25rem 1.25rem 0 0 !important;
+        }
+        .auth-right-panel {
+            border-radius: 0 0 1.25rem 1.25rem !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-page-wrapper">
+    <div class="auth-container-box">
+        
+        <!-- Role Selector Tabs Bar (Spanning Full Width) -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4 p-2 bg-white">
+            <div class="d-flex flex-wrap justify-content-center gap-2" id="roleSelector">
+                <a href="{{ url_for('auth.login', role='Mine Manager') }}" 
+                   class="btn btn-sm rounded-pill px-3 py-2 role-tab-btn {% if role == 'Mine Manager' %}btn-warning text-dark fw-bold shadow-sm{% else %}btn-light text-secondary{% endif %}">
+                    <i class="bi bi-person-workspace me-1"></i>1. Mine Manager
+                </a>
+                <a href="{{ url_for('auth.login', role='Safety Officer') }}" 
+                   class="btn btn-sm rounded-pill px-3 py-2 role-tab-btn {% if role == 'Safety Officer' %}btn-danger text-white fw-bold shadow-sm{% else %}btn-light text-secondary{% endif %}">
+                    <i class="bi bi-shield-exclamation me-1"></i>2. Safety Officer
+                </a>
+                <a href="{{ url_for('auth.login', role='Inspector') }}" 
+                   class="btn btn-sm rounded-pill px-3 py-2 role-tab-btn {% if role == 'Inspector' %}btn-info text-dark fw-bold shadow-sm{% else %}btn-light text-secondary{% endif %}">
+                    <i class="bi bi-clipboard2-check me-1"></i>3. DGMS Inspector
+                </a>
+                <a href="{{ url_for('auth.login', role='Worker') }}" 
+                   class="btn btn-sm rounded-pill px-3 py-2 role-tab-btn {% if role in ['Worker', 'Citizen'] %}btn-primary text-white fw-bold shadow-sm{% else %}btn-light text-secondary{% endif %}">
+                    <i class="bi bi-person-badge me-1"></i>Worker / Colliery
+                </a>
+                <a href="{{ url_for('auth.login', role='Admin') }}" 
+                   class="btn btn-sm rounded-pill px-3 py-2 role-tab-btn {% if role == 'Admin' %}btn-dark text-white fw-bold shadow-sm{% else %}btn-light text-secondary{% endif %}">
+                    <i class="bi bi-gear me-1"></i>Control Room
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Wide Login Card -->
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden bg-white" style="width: 100%;">
+            <div class="row g-0 align-items-stretch">
+                
+                <!-- Left Panel: Role Scope & Features (42% Width on Desktop) -->
+                <div class="col-lg-5 col-12 d-flex flex-column justify-content-between p-4 p-xl-5 text-white auth-left-panel"
+                    style="
+                    {% if role == 'Mine Manager' %}background: linear-gradient(145deg, #f59e0b, #d97706); color: #0f172a !important;
+                    {% elif role == 'Safety Officer' %}background: linear-gradient(145deg, #dc2626, #991b1b);
+                    {% elif role == 'Inspector' %}background: linear-gradient(145deg, #0284c7, #0369a1);
+                    {% elif role == 'Admin' %}background: linear-gradient(145deg, #1e293b, #0f172a);
+                    {% else %}background: linear-gradient(145deg, #2563eb, #1d4ed8);{% endif %}">
+                    
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <span class="badge bg-white {% if role == 'Mine Manager' %}text-warning{% elif role == 'Safety Officer' %}text-danger{% elif role == 'Inspector' %}text-info{% else %}text-primary{% endif %} fw-bold px-3 py-1 rounded-pill text-uppercase shadow-sm" style="font-size:0.72rem; letter-spacing: 0.5px;">
+                                Authorized Access Vault
+                            </span>
+                            <span class="badge bg-black bg-opacity-25 text-white fw-semibold" style="font-size:0.75rem;">
+                                <i class="bi bi-shield-check me-1"></i>CMR 2017 Certified
+                            </span>
+                        </div>
+                        
+                        <div class="d-flex align-items-center gap-3 mb-4">
+                            <div class="rounded-3 bg-white bg-opacity-25 p-3 d-flex align-items-center justify-content-center flex-shrink-0 shadow-sm" style="width: 64px; height: 64px;">
+                                {% if role == 'Mine Manager' %}
+                                <i class="bi bi-person-workspace" style="font-size: 2.4rem;"></i>
+                                {% elif role == 'Safety Officer' %}
+                                <i class="bi bi-shield-exclamation" style="font-size: 2.4rem;"></i>
+                                {% elif role == 'Inspector' %}
+                                <i class="bi bi-clipboard2-check" style="font-size: 2.4rem;"></i>
+                                {% elif role == 'Admin' %}
+                                <i class="bi bi-gear-wide-connected" style="font-size: 2.4rem;"></i>
+                                {% else %}
+                                <i class="bi bi-person-badge" style="font-size: 2.4rem;"></i>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <h3 class="fw-bold mb-1 lh-1" style="font-size: 1.6rem;">
+                                    {% if role == 'Mine Manager' %}Mine Manager
+                                    {% elif role == 'Safety Officer' %}Safety Officer
+                                    {% elif role == 'Inspector' %}DGMS Inspector
+                                    {% elif role == 'Admin' %}Control Room
+                                    {% else %}Colliery Worker{% endif %}
+                                </h3>
+                                <p class="opacity-90 mb-0" style="font-size:0.85rem;">
+                                    {% if role == 'Mine Manager' %}Executive Governance, Risk Index & Mine Trends
+                                    {% elif role == 'Safety Officer' %}Hazard Mitigation, Gas Telemetry & CAPA Sign-Off
+                                    {% elif role == 'Inspector' %}Statutory Field Audits, Evidence & Daily Status
+                                    {% elif role == 'Admin' %}Central Platform Administrator & Audit Ledger
+                                    {% else %}Incident Reporting, SOS Tracking & Welfare{% endif %}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="border-top border-white border-opacity-25 pt-3">
+                            <h6 class="fw-bold mb-3 text-uppercase" style="font-size:0.75rem; letter-spacing: 0.5px;">Dedicated Role Capabilities:</h6>
+                            <ul class="list-unstyled mb-0 d-flex flex-column gap-2 opacity-95" style="font-size:0.88rem;">
+                                {% if role == 'Mine Manager' %}
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>Overall Statutory Compliance Risk Scorecard</span></li>
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>Critical Incident & Statutory Escalation Feed</span></li>
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>Multi-Mine Benchmarking Matrix across Subsidiaries</span></li>
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>6-Month Historical Compliance & Safety Analytics</span></li>
+                                {% elif role == 'Safety Officer' %}
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>Live Violations & Real-Time Pit Hazard Log</span></li>
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>IoT Sensor Telemetry (CH₄, CO, Slope Displacement)</span></li>
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>Corrective & Preventive Action (CAPA) Lifecycle</span></li>
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>Contractor HSE Scorecards & HEMM Fleet Compliance</span></li>
+                                {% elif role == 'Inspector' %}
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>DGMS CMR 2017 Digital Field Inspection Checklist</span></li>
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>Photo & Audio Evidence with Anti-Tamper Verification</span></li>
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>Historical Contraventions & Statutory Infractions Archive</span></li>
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>One-Click DGMS Notice / Form 1/4 Report Generator</span></li>
+                                {% else %}
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>Hands-Free Voice & Photo Incident Submission</span></li>
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>Live Geo-Tracking & Underground Safety Beacon</span></li>
+                                <li class="d-flex align-items-center"><i class="bi bi-check-circle-fill me-2 flex-shrink-0"></i><span>AI Safety Assistant in Hindi & English</span></li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top border-white border-opacity-25 d-flex justify-content-between align-items-center" style="font-size:0.78rem;">
+                        <span><i class="bi bi-shield-lock-fill me-1"></i> SHA-256 Crypto Ledger Sealed</span>
+                        <span>MineGuard v2.5</span>
+                    </div>
+                </div>
+
+                <!-- Right Panel: Login Form & 1-Click Demos (58% Width on Desktop) -->
+                <div class="col-lg-7 col-12 p-4 p-xl-5 bg-white d-flex flex-column justify-content-between auth-right-panel">
+                    <div>
+                        <div class="mb-4">
+                            <h3 class="fw-bold text-dark mb-1" style="font-size:1.6rem;">
+                                {% if role == 'Mine Manager' %}Mine Manager Login
+                                {% elif role == 'Safety Officer' %}Safety Officer Login
+                                {% elif role == 'Inspector' %}DGMS Inspector Portal
+                                {% elif role == 'Admin' %}Control Room Admin Login
+                                {% else %}Colliery Worker Login{% endif %}
+                            </h3>
+                            <p class="text-muted small mb-0" style="font-size:0.88rem;">Sign in with your official colliery credentials or use the 1-Click demo accounts.</p>
+                        </div>
+
+                        <form method="POST" action="{{ url_for('auth.login', role=role) }}" id="mainLoginForm">
+                            <input type="hidden" name="role" value="{{ role }}" id="roleInput">
+                            
+                            <div class="mb-3">
+                                <label for="username" class="form-label text-muted fw-bold small mb-1">Username or Official Email</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 px-3"><i class="bi bi-person text-muted" style="font-size:1.1rem;"></i></span>
+                                    <input type="text" class="form-control form-control-lg border-start-0 ps-0 bg-light fs-6" id="username"
+                                        name="username" 
+                                        value="{% if role == 'Mine Manager' %}manager{% elif role == 'Safety Officer' %}safety{% elif role == 'Inspector' %}inspector{% elif role == 'Admin' %}admin{% else %}worker{% endif %}"
+                                        placeholder="Enter your username or email" required autofocus>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="password" class="form-label text-muted fw-bold small mb-1">Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 px-3"><i class="bi bi-lock text-muted" style="font-size:1.1rem;"></i></span>
+                                    <input type="password" class="form-control form-control-lg border-start-0 ps-0 bg-light fs-6"
+                                        id="password" name="password" 
+                                        value="{% if role == 'Mine Manager' %}manager123{% elif role == 'Safety Officer' %}safety123{% elif role == 'Inspector' %}inspector123{% elif role == 'Admin' %}admin123{% else %}worker123{% endif %}"
+                                        placeholder="Enter your password" required>
+                                </div>
+                            </div>
+
+                            <div class="d-grid mb-4">
+                                <button type="submit" class="btn btn-lg 
+                                    {% if role == 'Mine Manager' %}btn-warning text-dark fw-bold
+                                    {% elif role == 'Safety Officer' %}btn-danger fw-bold
+                                    {% elif role == 'Inspector' %}btn-info text-dark fw-bold
+                                    {% elif role == 'Admin' %}btn-dark fw-bold
+                                    {% else %}btn-primary fw-bold{% endif %} py-2 py-md-3 shadow-sm" style="font-size:1rem;">
+                                    Sign In to {{ role }} Portal <i class="bi bi-arrow-right-short ms-1" style="font-size:1.3rem;"></i>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 1-Click Fast Track Demo Buttons (Generous Spacing) -->
+                    <div class="p-3 bg-light rounded-4 border">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-bold text-uppercase" style="font-size:0.72rem; letter-spacing:0.5px;">
+                                ⚡ 1-Click Quick Demo Access
+                            </span>
+                            <span class="badge bg-secondary-subtle text-secondary border">Instant Auto-Fill</span>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-sm-6 col-12">
+                                <button type="button" class="btn btn-outline-warning text-dark btn-sm w-100 demo-login-btn border"
+                                        onclick="quickFill('manager', 'manager123', 'Mine Manager')">
+                                    <div class="rounded-circle bg-warning-subtle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width:36px; height:36px;">
+                                        <i class="bi bi-person-workspace text-warning" style="font-size:1.1rem;"></i>
+                                    </div>
+                                    <div class="text-start">
+                                        <div class="fw-bold text-dark" style="font-size:0.82rem;">1. Mine Manager</div>
+                                        <small class="text-muted" style="font-size:0.7rem;">manager / manager123</small>
+                                    </div>
+                                </button>
+                            </div>
+                            <div class="col-sm-6 col-12">
+                                <button type="button" class="btn btn-outline-danger btn-sm w-100 demo-login-btn border"
+                                        onclick="quickFill('safety', 'safety123', 'Safety Officer')">
+                                    <div class="rounded-circle bg-danger-subtle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width:36px; height:36px;">
+                                        <i class="bi bi-shield-exclamation text-danger" style="font-size:1.1rem;"></i>
+                                    </div>
+                                    <div class="text-start">
+                                        <div class="fw-bold text-dark" style="font-size:0.82rem;">2. Safety Officer</div>
+                                        <small class="text-muted" style="font-size:0.7rem;">safety / safety123</small>
+                                    </div>
+                                </button>
+                            </div>
+                            <div class="col-sm-6 col-12">
+                                <button type="button" class="btn btn-outline-info text-dark btn-sm w-100 demo-login-btn border"
+                                        onclick="quickFill('inspector', 'inspector123', 'Inspector')">
+                                    <div class="rounded-circle bg-info-subtle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width:36px; height:36px;">
+                                        <i class="bi bi-clipboard2-check text-info" style="font-size:1.1rem;"></i>
+                                    </div>
+                                    <div class="text-start">
+                                        <div class="fw-bold text-dark" style="font-size:0.82rem;">3. DGMS Inspector</div>
+                                        <small class="text-muted" style="font-size:0.7rem;">inspector / inspector123</small>
+                                    </div>
+                                </button>
+                            </div>
+                            <div class="col-sm-6 col-12">
+                                <button type="button" class="btn btn-outline-primary btn-sm w-100 demo-login-btn border"
+                                        onclick="quickFill('worker', 'worker123', 'Worker')">
+                                    <div class="rounded-circle bg-primary-subtle p-2 d-flex align-items-center justify-content-center flex-shrink-0" style="width:36px; height:36px;">
+                                        <i class="bi bi-person-badge text-primary" style="font-size:1.1rem;"></i>
+                                    </div>
+                                    <div class="text-start">
+                                        <div class="fw-bold text-dark" style="font-size:0.82rem;">4. Colliery Worker</div>
+                                        <small class="text-muted" style="font-size:0.7rem;">worker / worker123</small>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if role in ['Worker', 'Citizen'] %}
+                    <div class="text-center mt-3">
+                        <p class="text-muted small mb-0" style="font-size:0.82rem;">Don't have an official account? <a href="{{ url_for('auth.register') }}" class="text-primary fw-bold">Register here</a></p>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+function quickFill(user, pass, roleName) {
+    document.getElementById('username').value = user;
+    document.getElementById('password').value = pass;
+    document.getElementById('roleInput').value = roleName;
+    document.getElementById('mainLoginForm').submit();
+}
+</script>
+{% endblock %}

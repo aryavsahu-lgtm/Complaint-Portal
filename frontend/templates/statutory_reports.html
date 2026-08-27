@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Statutory Returns & Regulatory Reports | MineGuard CoalGov{% endblock %}
+
+{% block extra_css %}
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        #printableReport, #printableReport * {
+            visibility: visible;
+        }
+        #printableReport {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+        .no-print {
+            display: none !important;
+        }
+    }
+    .report-sheet {
+        background: #ffffff;
+        border: 2px solid #0f172a;
+        padding: 40px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Controls Bar -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4 no-print">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('governance.dashboard') }}" class="text-decoration-none text-muted small">
+                    <i class="bi bi-arrow-left me-1"></i> Command Center
+                </a>
+                <span class="text-muted">/</span>
+                <span class="badge bg-primary">DGMS & MoEFCC Certified Forms</span>
+            </div>
+            <h2 class="fw-bold text-dark mb-0">Statutory Regulatory Returns Generator</h2>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-primary fw-semibold shadow-sm">
+                <i class="bi bi-printer me-1"></i> Print / Save as PDF
+            </button>
+        </div>
+    </div>
+
+    <!-- Mine Selector & Report Type Selector -->
+    <div class="card shadow-sm border-0 mb-4 no-print">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('governance.statutory_reports') }}" class="row g-3 align-items-center">
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold">Select Coal Mine / Colliery</label>
+                    <select name="mine_id" class="form-select" onchange="this.form.submit()">
+                        {% for m in mines %}
+                        <option value="{{ m.id }}" {% if m.id == mine.id %}selected{% endif %}>
+                            {{ m.name }} ({{ m.subsidiary }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold">Statutory Report Type</label>
+                    <select name="type" class="form-select" onchange="this.form.submit()">
+                        <option value="form_iv" {% if report_type == 'form_iv' %}selected{% endif %}>DGMS FORM IV - Notice of Accident / Serious Incident (CMR Reg 8)</option>
+                        <option value="form_vi" {% if report_type == 'form_vi' %}selected{% endif %}>DGMS FORM VI - Notice of Occupational Disease (Mines Act Sec 25)</option>
+                        <option value="dgms_annual" {% if report_type == 'dgms_annual' %}selected{% endif %}>DGMS Annual Safety & Operational Return</option>
+                        <option value="ec_statement" {% if report_type == 'ec_statement' %}selected{% endif %}>MoEF&CC Six-Monthly Environmental Compliance Statement</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-outline-primary w-100 fw-semibold">Generate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Printable Official Report Sheet -->
+    <div id="printableReport" class="report-sheet">
+        
+        <!-- Official Header -->
+        <div class="text-center pb-3 mb-4 border-bottom border-dark border-2">
+            <div class="fw-bold text-uppercase" style="letter-spacing: 2px; font-size: 0.9rem;">GOVERNMENT OF INDIA / MINISTRY OF COAL</div>
+            <h4 class="fw-bold text-uppercase text-dark mt-1 mb-1">
+                {% if report_type == 'form_iv' %}
+                DIRECTORATE GENERAL OF MINES SAFETY — FORM IV
+                {% elif report_type == 'form_vi' %}
+                DIRECTORATE GENERAL OF MINES SAFETY — FORM VI
+                {% elif report_type == 'dgms_annual' %}
+                ANNUAL SAFETY, ENVIRONMENT & PRODUCTION STATUTORY RETURN
+                {% else %}
+                MoEF&CC SIX-MONTHLY ENVIRONMENTAL CLEARANCE COMPLIANCE STATEMENT
+                {% endif %}
+            </h4>
+            <div class="small text-muted">
+                {% if report_type == 'form_iv' %}
+                [Prescribed under Regulation 8 of the Coal Mines Regulations (CMR 2017) and Section 23 of Mines Act 1952]
+                {% elif report_type == 'form_vi' %}
+                [Prescribed under Section 25 of the Mines Act, 1952]
+                {% else %}
+                [Submitted pursuant to Environmental Clearance & Coal Mines Regulations 2017]
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Colliery Metadata Grid -->
+        <div class="row g-2 mb-4 p-3 bg-light rounded border border-secondary border-opacity-25 small">
+            <div class="col-6"><strong>Name of Mine:</strong> {{ mine.name }}</div>
+            <div class="col-6"><strong>Subsidiary / Company:</strong> {{ mine.subsidiary }} (Coal India Limited)</div>
+            <div class="col-6"><strong>Area / Field:</strong> {{ mine.area }}</div>
+            <div class="col-6"><strong>Mine Type:</strong> {{ mine.mine_type }}</div>
+            <div class="col-6"><strong>Leasehold Area:</strong> {{ mine.lease_area_ha }} Hectares</div>
+            <div class="col-6"><strong>Approved EC Capacity:</strong> {{ mine.ec_capacity_mtpa }} MTPA</div>
+            <div class="col-6"><strong>Colliery Safety Officer:</strong> {{ mine.safety_officer }}</div>
+            <div class="col-6"><strong>Date of Report Generation:</strong> {{ current_date }}</div>
+        </div>
+
+        {% if report_type == 'form_iv' %}
+        <!-- DGMS Form IV Incident Table -->
+        <h6 class="fw-bold text-dark text-uppercase border-bottom pb-2">1. Notice of Accidents, Dangerous Occurrences & Incidents</h6>
+        <table class="table table-bordered table-sm small align-middle mb-4">
+            <thead class="table-dark">
+                <tr>
+                    <th>Ref ID</th>
+                    <th>Date & Shift</th>
+                    <th>Exact Place in Mine</th>
+                    <th>Nature of Occurrence / Violation</th>
+                    <th>Risk Rating</th>
+                    <th>Action / Investigation Taken</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for insp in inspections %}
+                <tr>
+                    <td>INSP-{{ insp.id }}</td>
+                    <td>{{ insp.created_at[:10] }} ({{ insp.shift }})</td>
+                    <td>{{ insp.location_pit_seam }}</td>
+                    <td><strong>{{ insp.violation_title }}</strong><br>{{ insp.description }}</td>
+                    <td><span class="badge bg-secondary">{{ insp.risk_level }}</span></td>
+                    <td>{{ insp.status }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted">No reportable accidents or fatal occurrences during this period.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% elif report_type == 'ec_statement' %}
+        <!-- MoEFCC Environmental Statement Table -->
+        <h6 class="fw-bold text-dark text-uppercase border-bottom pb-2">1. Specific & General Environmental Clearance (EC) Conditions</h6>
+        <table class="table table-bordered table-sm small align-middle mb-4">
+            <thead class="table-dark">
+                <tr>
+                    <th>Condition / Ref Code</th>
+                    <th>Environmental Parameter</th>
+                    <th>Statutory Standard</th>
+                    <th>Actual Monitored Status</th>
+                    <th>Compliance Rating</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>EC Air Quality Standard</td>
+                    <td>Respirable Particulate (PM10 / PM2.5)</td>
+                    <td>PM10 < 100 µg/m³, PM2.5 < 60 µg/m³</td>
+                    <td>CAAQMS continuous uplink operational; mobile mist cannons active.</td>
+                    <td><span class="badge bg-success">COMPLIANT</span></td>
+                </tr>
+                <tr>
+                    <td>Water Act Sec 25/26</td>
+                    <td>Effluent & Acid Mine Drainage</td>
+                    <td>pH: 6.5 - 8.5, TSS < 100 mg/L</td>
+                    <td>ETP discharging treated water at pH 7.2; sedimentation lagoons cleared.</td>
+                    <td><span class="badge bg-success">COMPLIANT</span></td>
+                </tr>
+                <tr>
+                    <td>DGMS Overburden Dump SMP</td>
+                    <td>Overburden Slope Stability & Topsoil</td>
+                    <td>Dump slope < 28°, topsoil preserved</td>
+                    <td>Slope stability radar operational; biological reclamation on inactive benches.</td>
+                    <td><span class="badge bg-success">COMPLIANT</span></td>
+                </tr>
+            </tbody>
+        </table>
+        {% else %}
+        <!-- General Safety and Statutory Register -->
+        <h6 class="fw-bold text-dark text-uppercase border-bottom pb-2">1. Statutory Obligation Status Summary</h6>
+        <table class="table table-bordered table-sm small align-middle mb-4">
+            <thead class="table-dark">
+                <tr>
+                    <th>Statutory Act / Code</th>
+                    <th>Requirement Title</th>
+                    <th>Responsible Officer</th>
+                    <th>Due Date</th>
+                    <th>Compliance Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for comp in compliances %}
+                <tr>
+                    <td>{{ comp.regulatory_body }} - {{ comp.regulation_ref }}</td>
+                    <td>{{ comp.title }}</td>
+                    <td>{{ comp.responsible_officer }}</td>
+                    <td>{{ comp.due_date }}</td>
+                    <td><span class="badge bg-success">{{ comp.status }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        <!-- Sign-off Authority Block -->
+        <div class="row mt-5 pt-4 border-top border-dark small">
+            <div class="col-4 text-center">
+                <div class="fw-bold mb-4">_________________________</div>
+                <div class="fw-bold">{{ mine.safety_officer }}</div>
+                <div class="text-muted">Colliery Safety Officer (First Class)</div>
+            </div>
+            <div class="col-4 text-center">
+                <div class="fw-bold mb-4">_________________________</div>
+                <div class="fw-bold">{{ mine.colliery_manager }}</div>
+                <div class="text-muted">Colliery Manager / Agent</div>
+            </div>
+            <div class="col-4 text-center">
+                <div class="fw-bold mb-4">_________________________</div>
+                <div class="fw-bold">Area General Manager</div>
+                <div class="text-muted">{{ mine.subsidiary }} Head Office</div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

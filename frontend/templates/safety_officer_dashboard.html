@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+
+{% block title %}Safety Officer Hazard & CAPA Command - {{ t.portal_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hazard-card-critical {
+        border-left: 5px solid #dc2626 !important;
+        background: #fef2f2;
+    }
+    .hazard-card-high {
+        border-left: 5px solid #ea580c !important;
+        background: #fff7ed;
+    }
+    .hazard-card-medium {
+        border-left: 5px solid #f59e0b !important;
+        background: #fefce8;
+    }
+    .hazard-card-low {
+        border-left: 5px solid #10b981 !important;
+        background: #f0fdf4;
+    }
+    .sensor-dial {
+        border-radius: 12px;
+        background: white;
+        transition: transform 0.2s;
+    }
+    .sensor-dial:hover {
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4 px-lg-4" style="background-color: #f8fafc; min-height: 90vh;">
+
+    <!-- Top Header & Role Banner -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%); color: white;">
+        <div class="card-body p-4">
+            <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 bg-white text-danger p-3 d-flex align-items-center justify-content-center shadow" style="width: 60px; height: 60px;">
+                        <i class="bi bi-shield-fill-exclamation" style="font-size: 2rem;"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge bg-warning text-dark fw-bold px-2 py-1">SAFETY OFFICER HUB</span>
+                            <span class="badge bg-light text-danger fw-bold">CMR 2017 Reg. 29</span>
+                            <span class="badge bg-white bg-opacity-25 text-white">Live Monitoring</span>
+                        </div>
+                        <h3 class="fw-bold mb-0 text-white">Colliery Safety Officer Control Hub</h3>
+                        <p class="text-white-50 small mb-0">Real-time live violations, incident telemetry alarms, and corrective action (CAPA) tracking.</p>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <form method="GET" action="{{ url_for('governance.safety_dashboard') }}" class="d-flex align-items-center gap-2">
+                        <select name="mine_id" class="form-select form-select-sm bg-dark text-white border-secondary" onchange="this.form.submit()" style="min-width: 180px;">
+                            <option value="All" {% if filter_mine == 'All' %}selected{% endif %}>All Collieries</option>
+                            {% for m in mines %}
+                            <option value="{{ m.id }}" {% if filter_mine == m.id|string %}selected{% endif %}>{{ m.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                    <a href="{{ url_for('governance.field_inspection') }}" class="btn btn-warning text-dark fw-bold btn-sm shadow-sm">
+                        <i class="bi bi-plus-circle-fill me-1"></i> Log Field Hazard
+                    </a>
+                    <a href="{{ url_for('governance.capa_manager') }}" class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-tools me-1"></i> Full CAPA Hub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 High-Priority KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm p-3 bg-white border-start border-4 border-danger h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted fw-bold small text-uppercase">Live Pit Violations</span>
+                    <span class="badge bg-danger">{{ crit_violations }} Critical</span>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <h2 class="fw-bold mb-0 text-danger">{{ violations|length }}</h2>
+                    <span class="text-muted small">Active observations</span>
+                </div>
+                <small class="text-danger mt-2 d-block"><i class="bi bi-exclamation-octagon-fill me-1"></i>{{ high_violations }} High Severity awaiting resolution</small>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm p-3 bg-white border-start border-4 border-warning h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted fw-bold small text-uppercase">Telemetry Alarms</span>
+                    <span class="badge {% if active_hazard_count > 0 %}bg-warning text-dark{% else %}bg-success text-white{% endif %}">
+                        {% if active_hazard_count > 0 %}{{ active_hazard_count }} Breaches{% else %}Normal{% endif %}
+                    </span>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <h2 class="fw-bold mb-0 {% if active_hazard_count > 0 %}text-warning-emphasis{% else %}text-success{% endif %}">{{ active_hazard_count }}</h2>
+                    <span class="text-muted small">IoT Gas & Slope Alerts</span>
+                </div>
+                <small class="text-muted mt-2 d-block"><i class="bi bi-broadcast me-1"></i>CH₄, CO, Dust PM10 & Slope telemetry</small>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm p-3 bg-white border-start border-4 border-info h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted fw-bold small text-uppercase">Open CAPA Actions</span>
+                    <span class="badge bg-info-subtle text-info-emphasis border">{{ open_capas_count }} Active</span>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <h2 class="fw-bold mb-0 text-info-emphasis">{{ open_capas_count }}</h2>
+                    <span class="text-muted small">Under Engineering Action</span>
+                </div>
+                <small class="text-muted mt-2 d-block"><i class="bi bi-check2-all me-1"></i>{{ capas|length }} total assigned CAPAs</small>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card shadow-sm p-3 bg-white border-start border-4 border-success h-100">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted fw-bold small text-uppercase">Contractor Compliance</span>
+                    <span class="badge bg-success-subtle text-success border border-success">Verified</span>
+                </div>
+                <div class="d-flex align-items-baseline gap-2">
+                    <h2 class="fw-bold mb-0 text-success">96.8%</h2>
+                    <span class="text-muted small">VTC & Form O PME Rate</span>
+                </div>
+                <small class="text-muted mt-2 d-block"><i class="bi bi-people-fill me-1"></i>{{ contractors|length }} approved mining contractors</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- IoT Environmental Telemetry Breach Monitor -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-0">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-activity text-danger" style="font-size: 1.3rem;"></i>
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark">Real-Time Atmospheric & Sensor Telemetry Feed</h5>
+                    <small class="text-muted">Continuous IoT monitoring of underground and open cast hazard indicators.</small>
+                </div>
+            </div>
+            <span class="badge bg-dark px-3 py-2"><i class="bi bi-clock me-1"></i>Live Uplink Active</span>
+        </div>
+        <div class="card-body px-4 pt-0">
+            <div class="row g-3">
+                {% for tel in telemetry[:6] %}
+                <div class="col-xl-4 col-md-6">
+                    <div class="p-3 border rounded-3 sensor-dial {% if tel.alert_level == 'Critical' %}border-danger bg-danger-subtle bg-opacity-25{% elif tel.alert_level == 'Warning' %}border-warning bg-warning-subtle bg-opacity-25{% else %}border-light-subtle{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong class="text-dark">{{ tel.zone_name }}</strong>
+                                <small class="text-muted d-block">{{ tel.mine_name }}</small>
+                            </div>
+                            <span class="badge {% if tel.alert_level == 'Critical' %}bg-danger{% elif tel.alert_level == 'Warning' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                {{ tel.alert_level }}
+                            </span>
+                        </div>
+                        <div class="row g-2 text-center my-2">
+                            <div class="col-3">
+                                <small class="text-muted d-block" style="font-size:0.68rem;">CH₄ (Methane)</small>
+                                <strong class="{% if tel.ch4_percent > 0.3 %}text-danger{% else %}text-dark{% endif %}" style="font-size:0.95rem;">
+                                    {{ tel.ch4_percent }}%
+                                </strong>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted d-block" style="font-size:0.68rem;">CO (Carbon Mon.)</small>
+                                <strong class="{% if tel.co_ppm > 8 %}text-danger{% else %}text-dark{% endif %}" style="font-size:0.95rem;">
+                                    {{ tel.co_ppm }} ppm
+                                </strong>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted d-block" style="font-size:0.68rem;">Dust PM10</small>
+                                <strong class="{% if tel.dust_pm10 > 100 %}text-warning-emphasis{% else %}text-dark{% endif %}" style="font-size:0.95rem;">
+                                    {{ tel.dust_pm10 }}
+                                </strong>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted d-block" style="font-size:0.68rem;">Slope Radar</small>
+                                <strong class="{% if tel.slope_displacement_mm > 3 %}text-danger{% else %}text-dark{% endif %}" style="font-size:0.95rem;">
+                                    {{ tel.slope_displacement_mm }} mm
+                                </strong>
+                            </div>
+                        </div>
+                        {% if tel.analysis and tel.analysis.has_anomalies %}
+                        <div class="mt-2 p-2 rounded bg-danger text-white small" style="font-size:0.75rem;">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>{{ tel.analysis.anomalies[0].message if tel.analysis.anomalies else 'Critical Telemetry Breach' }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Violations & Field Observations Stream -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-0">
+            <div>
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-shield-shaded text-danger me-2"></i>Live Violations & Pit Hazard Log</h5>
+                <small class="text-muted">Direct observation feed submitted by shift safety supervisors and field engineers.</small>
+            </div>
+            <a href="{{ url_for('governance.field_inspection') }}" class="btn btn-sm btn-primary">
+                <i class="bi bi-camera-fill me-1"></i> New Inspection
+            </a>
+        </div>
+        <div class="card-body px-4 pt-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+                    <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th>Severity</th>
+                            <th>Colliery & Location</th>
+                            <th>Observation & Description</th>
+                            <th>Shift & Inspector</th>
+                            <th>AI Authenticity</th>
+                            <th>Status</th>
+                            <th class="text-end">CAPA Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in violations %}
+                        <tr>
+                            <td>
+                                {% if v.risk_level == 'Critical' %}
+                                <span class="badge bg-danger px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Critical</span>
+                                {% elif v.risk_level == 'High' %}
+                                <span class="badge bg-warning text-dark px-2 py-1">High</span>
+                                {% elif v.risk_level == 'Medium' %}
+                                <span class="badge bg-secondary-subtle text-dark border px-2 py-1">Medium</span>
+                                {% else %}
+                                <span class="badge bg-success-subtle text-success border px-2 py-1">Low</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong class="text-dark">{{ v.mine_name }}</strong>
+                                <small class="text-muted d-block"><i class="bi bi-geo-alt me-1"></i>{{ v.location_pit_seam }}</small>
+                            </td>
+                            <td style="max-width: 320px;">
+                                <div class="fw-semibold text-dark">{{ v.violation_title }}</div>
+                                <div class="small text-muted text-truncate">{{ v.description }}</div>
+                                {% if v.photo_attachment %}
+                                <small class="text-primary"><i class="bi bi-image me-1"></i>Photo Evidence Attached</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="small fw-semibold text-dark">{{ v.inspector_name }}</div>
+                                <small class="text-muted d-block">{{ v.shift }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-success-subtle text-success border border-success">
+                                    <i class="bi bi-shield-check me-1"></i>{{ v.authenticity_score }}% Verified
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge {% if v.status == 'Resolved' %}bg-success{% elif v.status == 'CAPA Assigned' %}bg-info text-dark{% else %}bg-warning text-dark{% endif %}">
+                                    {{ v.status }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <a href="{{ url_for('governance.capa_manager') }}" class="btn btn-sm btn-outline-danger" title="Manage Corrective Action">
+                                    <i class="bi bi-tools"></i> CAPA
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Corrective Actions (CAPA) Lifecycle Pipeline -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-0">
+            <div>
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-tools text-warning me-2"></i>Corrective & Preventive Action (CAPA) Lifecycle</h5>
+                <small class="text-muted">Assigned engineering rectifications, root causes, target deadlines and sign-offs.</small>
+            </div>
+            <span class="badge bg-primary-subtle text-primary border border-primary">{{ capas|length }} Actions</span>
+        </div>
+        <div class="card-body px-4 pt-0">
+            <div class="row g-3">
+                {% for ca in capas %}
+                <div class="col-lg-6">
+                    <div class="p-3 rounded-3 border bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge {% if ca.status == 'Closed' %}bg-success{% elif ca.status == 'Verification Required' %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
+                                    {{ ca.status }}
+                                </span>
+                                <small class="text-muted">Target Date: <strong class="text-danger">{{ ca.target_date }}</strong></small>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">{{ ca.title }}</h6>
+                            <div class="small text-muted mb-2"><strong>Root Cause:</strong> {{ ca.root_cause }}</div>
+                            <div class="small text-dark mb-2"><strong>Corrective Action:</strong> {{ ca.corrective_action }}</div>
+                        </div>
+                        <div class="pt-2 border-top d-flex justify-content-between align-items-center small text-muted">
+                            <span><i class="bi bi-person-fill me-1"></i>Assigned: <strong>{{ ca.assigned_engineer }}</strong></span>
+                            <span class="badge bg-secondary-subtle text-dark border">{{ ca.mine_name }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

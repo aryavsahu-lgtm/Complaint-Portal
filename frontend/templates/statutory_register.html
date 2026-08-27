@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}Statutory Compliance Register | MineGuard CoalGov{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <!-- Header & Register Obligation Button -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('governance.dashboard') }}" class="text-decoration-none text-muted small">
+                    <i class="bi bi-arrow-left me-1"></i> Command Center
+                </a>
+                <span class="text-muted">/</span>
+                <span class="badge bg-primary">DGMS & Environmental Ledger</span>
+            </div>
+            <h2 class="fw-bold text-dark mb-0">Statutory Compliance Register</h2>
+            <p class="text-muted mb-0">Digital compliance ledger for Coal Mines Regulations (CMR 2017), Mines Act 1952, EC/CTO permits, and Labour statutes.</p>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-primary fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addStatutoryModal">
+                <i class="bi bi-plus-circle-fill me-1"></i> Register Statutory Mandate
+            </button>
+            <a href="{{ url_for('governance.statutory_reports') }}" class="btn btn-outline-secondary fw-semibold">
+                <i class="bi bi-download me-1"></i> Export Register
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('governance.statutory_register') }}" class="row g-3 align-items-center">
+                <div class="col-md-3">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" value="{{ search_query }}" class="form-control border-start-0" placeholder="Search Regulation, Mine, or Title...">
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <select name="body" class="form-select">
+                        <option value="All" {% if filter_body == 'All' %}selected{% endif %}>All Regulatory Bodies</option>
+                        <option value="DGMS" {% if filter_body == 'DGMS' %}selected{% endif %}>DGMS (Directorate General of Mines Safety)</option>
+                        <option value="MoEFCC" {% if filter_body == 'MoEFCC' %}selected{% endif %}>MoEF&CC (Environment & Climate)</option>
+                        <option value="CPCB/SPCB" {% if filter_body == 'CPCB/SPCB' %}selected{% endif %}>CPCB / SPCB (Pollution Control)</option>
+                        <option value="Labour Dept" {% if filter_body == 'Labour Dept' %}selected{% endif %}>Labour Ministry / CMPF</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <select name="category" class="form-select">
+                        <option value="All" {% if filter_category == 'All' %}selected{% endif %}>All Categories</option>
+                        <option value="Safety" {% if filter_category == 'Safety' %}selected{% endif %}>Safety</option>
+                        <option value="Environment" {% if filter_category == 'Environment' %}selected{% endif %}>Environment</option>
+                        <option value="Labour" {% if filter_category == 'Labour' %}selected{% endif %}>Labour / Medical</option>
+                        <option value="Operations" {% if filter_category == 'Operations' %}selected{% endif %}>Operations</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <select name="status" class="form-select">
+                        <option value="All" {% if filter_status == 'All' %}selected{% endif %}>All Statuses</option>
+                        <option value="Compliant" {% if filter_status == 'Compliant' %}selected{% endif %}>Compliant</option>
+                        <option value="Approaching Deadline" {% if filter_status == 'Approaching Deadline' %}selected{% endif %}>Approaching Deadline</option>
+                        <option value="Non-Compliant" {% if filter_status == 'Non-Compliant' %}selected{% endif %}>Non-Compliant</option>
+                        <option value="Critical Breach" {% if filter_status == 'Critical Breach' %}selected{% endif %}>Critical Breach</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary w-100 fw-semibold">Filter</button>
+                    <a href="{{ url_for('governance.statutory_register') }}" class="btn btn-light border" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Statutory Table -->
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-muted small text-uppercase">
+                        <tr>
+                            <th>Reg. Body & Ref</th>
+                            <th>Statutory Requirement & Mine</th>
+                            <th>Category</th>
+                            <th>Frequency</th>
+                            <th>Due Date</th>
+                            <th>Risk Score</th>
+                            <th>Status</th>
+                            <th>Responsible Officer</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for comp in compliances %}
+                        <tr>
+                            <td>
+                                <span class="badge {% if comp.regulatory_body == 'DGMS' %}bg-danger{% elif comp.regulatory_body == 'MoEFCC' %}bg-success{% elif comp.regulatory_body == 'CPCB/SPCB' %}bg-info{% else %}bg-primary{% endif %} mb-1">
+                                    {{ comp.regulatory_body }}
+                                </span>
+                                <div class="small fw-bold text-dark font-monospace">{{ comp.regulation_ref }}</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">{{ comp.title }}</div>
+                                <div class="small text-muted"><i class="bi bi-building me-1"></i>{{ comp.mine_name }} ({{ comp.subsidiary }})</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">{{ comp.category }}</span>
+                            </td>
+                            <td><span class="small fw-semibold">{{ comp.frequency }}</span></td>
+                            <td>
+                                <div class="fw-bold text-dark">{{ comp.due_date }}</div>
+                            </td>
+                            <td>
+                                <span class="badge {% if comp.risk_score >= 70 %}bg-danger{% elif comp.risk_score >= 40 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                    {{ comp.risk_score }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if comp.status == 'Compliant' %}
+                                <span class="badge bg-success-subtle text-success border border-success px-2 py-1"><i class="bi bi-check-circle me-1"></i>Compliant</span>
+                                {% elif comp.status == 'Approaching Deadline' %}
+                                <span class="badge bg-warning-subtle text-warning border border-warning px-2 py-1"><i class="bi bi-clock me-1"></i>Due Soon</span>
+                                {% elif comp.status == 'Critical Breach' %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Critical Breach</span>
+                                {% else %}
+                                <span class="badge bg-danger-subtle text-danger border border-danger px-2 py-1">{{ comp.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted"><i class="bi bi-person-fill me-1"></i>{{ comp.responsible_officer }}</small>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-primary fw-semibold" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ comp.id }}">
+                                    <i class="bi bi-pencil-square me-1"></i> Update
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modals for Updating Status (Placed outside table container for proper DOM hierarchy and stacking context) -->
+{% for comp in compliances %}
+<div class="modal fade" id="updateStatusModal{{ comp.id }}" tabindex="-1" aria-labelledby="updateStatusModalLabel{{ comp.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <form method="POST" action="{{ url_for('governance.update_statutory_status', item_id=comp.id) }}">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold" id="updateStatusModalLabel{{ comp.id }}">
+                        <i class="bi bi-shield-lock-fill text-warning me-2"></i>Update Compliance Status
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Requirement & Mine</label>
+                        <div class="p-2 bg-light rounded border">
+                            <strong class="d-block text-dark">{{ comp.title }}</strong>
+                            <small class="text-muted"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ comp.mine_name }} ({{ comp.subsidiary }})</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">Regulation Reference</label>
+                        <input type="text" class="form-control font-monospace bg-light" value="{{ comp.regulation_ref }}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Compliance Status</label>
+                        <select name="status" class="form-select fw-semibold">
+                            <option value="Compliant" {% if comp.status == 'Compliant' %}selected{% endif %}>🟢 Compliant</option>
+                            <option value="Approaching Deadline" {% if comp.status == 'Approaching Deadline' %}selected{% endif %}>🟡 Approaching Deadline</option>
+                            <option value="Non-Compliant" {% if comp.status == 'Non-Compliant' %}selected{% endif %}>🟠 Non-Compliant</option>
+                            <option value="Critical Breach" {% if comp.status == 'Critical Breach' %}selected{% endif %}>🔴 Critical Breach</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Auditor Verification Remarks</label>
+                        <textarea name="remarks" class="form-control" rows="3" placeholder="Enter inspection notes, certificate upload reference, or corrective actions taken...">{{ comp.remarks }}</textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-semibold shadow-sm">
+                        <i class="bi bi-shield-check me-1"></i> Save & Sign Cryptographically
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Modal: Add New Statutory Requirement -->
+<div class="modal fade" id="addStatutoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('governance.add_statutory_obligation') }}">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-journal-plus me-2"></i>Register New Statutory Compliance Mandate</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Colliery / Mine</label>
+                            <select name="mine_id" class="form-select" required>
+                                {% for m in mines %}
+                                <option value="{{ m.id }}">{{ m.name }} ({{ m.subsidiary }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Regulatory Authority</label>
+                            <select name="regulatory_body" class="form-select" required>
+                                <option value="DGMS">DGMS (Directorate General of Mines Safety)</option>
+                                <option value="MoEFCC">MoEF&CC (Ministry of Environment, Forest & CC)</option>
+                                <option value="CPCB/SPCB">CPCB / SPCB (Pollution Control Board)</option>
+                                <option value="Labour Dept">Labour Ministry / CMPF Authority</option>
+                                <option value="PESO">PESO (Explosives & Blasting Safety)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Regulation Reference / Code</label>
+                            <input type="text" name="regulation_ref" class="form-control" placeholder="e.g. CMR 2017 Reg 123 / Section 22" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Category</label>
+                            <select name="category" class="form-select">
+                                <option value="Safety">Safety & Strata Control</option>
+                                <option value="Environment">Environment & Air/Water Quality</option>
+                                <option value="Labour">Labour Welfare & Form O Medicals</option>
+                                <option value="Operations">Operations & Slope Stability</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label small fw-bold">Mandate Title & Description</label>
+                            <input type="text" name="title" class="form-control" placeholder="e.g. Scientific Strata Control & Roof Support Plan Approval" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Frequency</label>
+                            <select name="frequency" class="form-select">
+                                <option value="Daily">Daily</option>
+                                <option value="Weekly">Weekly</option>
+                                <option value="Monthly">Monthly</option>
+                                <option value="Quarterly">Quarterly</option>
+                                <option value="Half-Yearly">Half-Yearly</option>
+                                <option value="Annual">Annual</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Compliance Due Date</label>
+                            <input type="date" name="due_date" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-bold">Assigned Responsible Officer</label>
+                            <input type="text" name="responsible_officer" class="form-control" placeholder="e.g. Colliery Safety Officer" required>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label small fw-bold">Initial Remarks / Compliance Guidance</label>
+                            <textarea name="remarks" class="form-control" rows="2" placeholder="Specific testing parameters, approval references, or statutory instructions..."></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary fw-semibold">
+                        <i class="bi bi-check-circle-fill me-1"></i> Save to Statutory Ledger
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

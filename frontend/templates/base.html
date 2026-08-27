@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}MineGuard Compliance Command{% endblock %}
+    </title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <!-- Official Tricolor Accent Strip -->
+    <div
+        style="height: 4px; background: linear-gradient(to right, var(--saffron) 33.33%, var(--white) 33.33%, var(--white) 66.66%, var(--green) 66.66%);">
+    </div>
+
+    <div class="top-bar">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-bank2 me-2"></i>
+                <div class="d-flex flex-column">
+                    <span class="fw-bold lh-1">MineGuard Operations</span>
+                    <small class="text-white-50" style="font-size: 0.75rem;">Safety, Environment & Regulatory Control</small>
+                </div>
+                <span class="border-start ps-2 ms-2">Coal Mine Governance</span>
+            </div>
+            <div class="d-flex align-items-center small" style="font-size: 0.95rem;">
+                <div class="me-3 border-end pe-3 d-none d-md-block">
+                    <a href="#main-content" class="text-white text-decoration-none me-2">{{ t.skip_to_content }}</a>
+                    <a href="https://www.nvda-project.org/" target="_blank" class="text-white text-decoration-none"
+                        title="Link to Screen Reader information">{{ t.screen_reader }}</a>
+                </div>
+                <div class="language-selector d-flex align-items-center">
+                    <a href="{{ url_for('set_language', lang='en') }}"
+                        class="text-white text-decoration-none {% if session.get('lang', 'en') == 'en' %}fw-bold text-warning{% endif %} me-2">English</a>
+                    <span class="text-white-50">|</span>
+                    <a href="{{ url_for('set_language', lang='hi') }}"
+                        class="text-white text-decoration-none hindi ms-2 {% if session.get('lang') == 'hi' %}fw-bold text-warning{% endif %}">हिन्दी</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-xl navbar-light sticky-top">
+        <div class="container-fluid px-3">
+            <div class="w-100">
+                <!-- Government of India & Ministry of Coal Brand Header Row -->
+                <div class="d-flex justify-content-between align-items-center mb-2 position-relative border-bottom pb-2 pt-1">
+                    
+                    <!-- Left: National Emblem & Ministry of Coal Identity -->
+                    <div class="d-none d-md-flex align-items-center gap-2">
+                        <img src="{{ url_for('static', filename='images/emblem_of_india.svg') }}"
+                            alt="State Emblem of India" style="height: 48px; width: auto; object-fit: contain;">
+                        <div class="d-flex flex-column border-start ps-2 border-2 border-warning">
+                            <span class="fw-bold text-dark lh-1" style="font-size: 0.85rem;">{{ t.govt_india }}</span>
+                            <span class="text-muted small fw-semibold lh-1" style="font-size: 0.72rem;">{{ t.ministry_coal }}</span>
+                            <span class="fw-bold text-primary lh-1 mt-1" style="font-size: 0.82rem;">{{ t.ministry_coal_full }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Center: Portal Name -->
+                    <a class="navbar-brand py-0 mb-0 mx-auto text-center" href="{{ url_for('index') }}">
+                        <div class="d-flex align-items-center justify-content-center gap-2">
+                            <div class="brand-mark flex-shrink-0 text-primary" aria-hidden="true">
+                                <i class="bi bi-shield-shaded" style="font-size: 1.8rem;"></i>
+                            </div>
+                            <div class="brand-text d-flex flex-column text-center">
+                                <span class="fw-bold text-primary"
+                                    style="font-size: 1.75rem; line-height: 1.05; letter-spacing: -0.5px; white-space: nowrap;">
+                                    {{ t.portal_name }}
+                                </span>
+                                <span class="hindi fw-bold text-secondary" style="font-size: 0.95rem; line-height: 1.1;">
+                                    {{ t.hindi_portal_name }}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- Right: Ministry of Coal Emblem & Digital India Badge -->
+                    <div class="d-none d-md-flex align-items-center gap-3">
+                        <div class="d-flex flex-column text-end">
+                            <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1 fw-bold" style="font-size: 0.72rem;">
+                                <i class="bi bi-shield-check me-1"></i>{{ t.dgms_certified }}
+                            </span>
+                            <small class="text-muted fw-semibold mt-1" style="font-size: 0.7rem;">
+                                {{ t.zero_harm }}
+                            </small>
+                        </div>
+                        <img src="{{ url_for('static', filename='images/ministry_of_coal_logo.svg') }}"
+                            alt="Ministry of Coal Seal" style="height: 48px; width: auto; object-fit: contain;">
+                        <img src="{{ url_for('static', filename='images/digital_india_logo.svg') }}"
+                            alt="Digital India" style="height: 32px; width: auto;" class="d-none d-lg-block">
+                    </div>
+
+                    <button class="navbar-toggler position-absolute end-0 top-50 translate-middle-y d-xl-none" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                </div>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav w-100 justify-content-center align-items-center flex-wrap" style="gap:0; font-size:0.78rem;">
+                        <li class="nav-item">
+                            <a class="nav-link py-1 px-2" href="{{ url_for('index') }}">{{ t.home }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-1 px-2" href="{{ url_for('complaints.submit_complaint') }}">{{
+                                t.file_grievance }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-1 px-2" href="{{ url_for('complaints.track_complaint') }}">{{
+                                t.track_complaint }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-1 px-2" href="{{ url_for('complaints.departments') }}">{{ t.departments
+                                }}</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-1 px-2" href="{{ url_for('complaints.services') }}">{{
+                                t.municipal_services }}</a>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle fw-bold text-primary py-1 px-2" href="#" id="govDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-shield-shaded me-1"></i> {{ t.coalgov_command }}
+                            </a>
+                            <ul class="dropdown-menu shadow border-0" aria-labelledby="govDropdown">
+                                <li><a class="dropdown-item py-2" href="{{ url_for('governance.dashboard') }}"><i class="bi bi-speedometer2 text-primary me-2"></i><strong>{{ t.command_center }}</strong></a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('governance.statutory_register') }}"><i class="bi bi-journal-check text-success me-2"></i>{{ t.statutory_register }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('governance.field_inspection') }}"><i class="bi bi-geo-alt-fill text-danger me-2"></i>{{ t.field_inspection }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('governance.capa_manager') }}"><i class="bi bi-tools text-warning me-2"></i>{{ t.capa_manager }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('governance.contractor_hub') }}"><i class="bi bi-person-vcard text-info me-2"></i>{{ t.contractor_hub }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('governance.gis_map') }}"><i class="bi bi-map-fill text-primary me-2"></i>{{ t.gis_map }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('governance.ocr_scanner') }}"><i class="bi bi-file-earmark-code text-secondary me-2"></i>{{ t.ocr_scanner }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('governance.statutory_reports') }}"><i class="bi bi-file-earmark-pdf text-danger me-2"></i>{{ t.statutory_reports }}</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('governance.crypto_audit') }}"><i class="bi bi-link-45deg text-dark me-2"></i>{{ t.crypto_audit }}</a></li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link py-1 px-2" href="{{ url_for('chatbot.chatbot_page') }}">
+                                <i class="bi bi-robot me-1"></i> {{ t.ai_seva_assistant }}
+                            </a>
+                        </li>
+
+                        {% if session.user_id %}
+                        <!-- Live Location Status Indicator -->
+                        <li class="nav-item d-flex align-items-center ms-1">
+                            {% if session.tracking_consent %}
+                            <div class="badge rounded-pill bg-success-subtle text-success border border-success px-2 py-1"
+                                id="nav-tracking-indicator" title="Your safety is being monitored">
+                                <span class="spinner-grow spinner-grow-sm me-1" role="status"></span>
+                                <i class="bi bi-geo-alt-fill"></i> Live
+                            </div>
+                            {% else %}
+                            <a href="{{ url_for('complaints.user_dashboard') }}#trackingToggle"
+                                class="badge rounded-pill bg-light text-muted border px-2 py-1 text-decoration-none"
+                                title="Enable safety monitoring in dashboard">
+                                <i class="bi bi-geo-alt"></i> Monitoring Paused
+                            </a>
+                            {% endif %}
+                        </li>
+
+                        <!-- Logged-in User Role Dashboard & Profile -->
+                        {% if session.role == 'Mine Manager' or 'manager' in (session.role|lower if session.role else '') %}
+                        <li class="nav-item ms-1">
+                            <a class="btn btn-warning btn-sm px-2 text-dark fw-bold" style="font-size:0.75rem;" href="{{ url_for('governance.manager_dashboard') }}">
+                                <i class="bi bi-briefcase-fill me-1"></i> {{ t.manager_dashboard }}
+                            </a>
+                        </li>
+                        {% elif session.role == 'Safety Officer' or 'safety' in (session.role|lower if session.role else '') %}
+                        <li class="nav-item ms-1">
+                            <a class="btn btn-danger btn-sm px-2 fw-bold" style="font-size:0.75rem;" href="{{ url_for('governance.safety_dashboard') }}">
+                                <i class="bi bi-shield-fill-exclamation me-1"></i> {{ t.safety_dashboard }}
+                            </a>
+                        </li>
+                        {% elif session.role == 'Inspector' or 'inspector' in (session.role|lower if session.role else '') %}
+                        <li class="nav-item ms-1">
+                            <a class="btn btn-info btn-sm px-2 text-dark fw-bold" style="font-size:0.75rem;" href="{{ url_for('governance.inspector_dashboard') }}">
+                                <i class="bi bi-clipboard2-check-fill me-1"></i> {{ t.inspector_dashboard }}
+                            </a>
+                        </li>
+                        {% elif session.is_admin %}
+                        <li class="nav-item ms-1">
+                            <a class="btn btn-primary btn-sm px-2" style="font-size:0.75rem;" href="{{ url_for('complaints.admin_dashboard') }}">
+                                <i class="bi bi-speedometer2 me-1"></i> {{ t.admin_panel }}
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="nav-item ms-1">
+                            <a class="btn btn-primary btn-sm px-2" style="font-size:0.75rem;" href="{{ url_for('complaints.user_dashboard') }}">
+                                <i class="bi bi-person-badge me-1"></i> {{ session.username or 'Worker' }}
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item ms-1">
+                            <a class="btn btn-outline-danger btn-sm px-2" style="font-size:0.75rem;" href="{{ url_for('auth.logout') }}" title="Logout">
+                                <i class="bi bi-box-arrow-right"></i> {{ t.logout }}
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="nav-item dropdown ms-1">
+                            <a class="nav-link dropdown-toggle btn btn-outline-primary btn-sm px-2 text-primary d-flex align-items-center gap-1"
+                                href="#" id="loginDropdown" role="button" data-bs-toggle="dropdown"
+                                aria-expanded="false" style="border-radius: 6px; font-weight: 700; font-size:0.78rem;">
+                                <i class="bi bi-shield-lock-fill"></i> {{ t.login }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 animate__animated animate__fadeIn p-2"
+                                aria-labelledby="loginDropdown" style="border-radius: 12px; min-width: 280px;">
+                                <li class="px-2 py-1 text-muted small fw-bold text-uppercase" style="font-size:0.68rem; letter-spacing:0.5px;">
+                                    {{ t.select_role }}
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 rounded-2 d-flex align-items-center gap-2 mb-1"
+                                        href="{{ url_for('auth.login', role='Mine Manager') }}">
+                                        <div class="rounded-circle bg-warning-subtle text-warning-emphasis d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
+                                            <i class="bi bi-person-workspace" style="font-size:1.1rem;"></i>
+                                        </div>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold text-dark" style="font-size:0.84rem;">{{ t.mine_manager_login }}</span>
+                                            <small class="text-muted" style="font-size:0.7rem; line-height:1.1;">Risk & Incident Trends</small>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 rounded-2 d-flex align-items-center gap-2 mb-1"
+                                        href="{{ url_for('auth.login', role='Safety Officer') }}">
+                                        <div class="rounded-circle bg-danger-subtle text-danger d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
+                                            <i class="bi bi-shield-exclamation" style="font-size:1.1rem;"></i>
+                                        </div>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold text-dark" style="font-size:0.84rem;">{{ t.safety_officer_login }}</span>
+                                            <small class="text-muted" style="font-size:0.7rem; line-height:1.1;">Violations & Live Telemetry</small>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 rounded-2 d-flex align-items-center gap-2 mb-1"
+                                        href="{{ url_for('auth.login', role='Inspector') }}">
+                                        <div class="rounded-circle bg-info-subtle text-info-emphasis d-flex align-items-center justify-content-center" style="width:32px; height:32px;">
+                                            <i class="bi bi-clipboard2-check" style="font-size:1.1rem;"></i>
+                                        </div>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold text-dark" style="font-size:0.84rem;">{{ t.inspector_login }}</span>
+                                            <small class="text-muted" style="font-size:0.7rem; line-height:1.1;">Checklist & Evidence Audits</small>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li>
+                                    <hr class="dropdown-divider my-1">
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 rounded-2 d-flex align-items-center gap-2 mb-1"
+                                        href="{{ url_for('auth.login', role='Worker') }}">
+                                        <i class="bi bi-person-circle text-primary" style="font-size:1.1rem;"></i>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-semibold text-dark" style="font-size:0.82rem;">{{ t.citizen_login }}</span>
+                                            <small class="text-muted" style="font-size:0.7rem;">Field Workers & Staff</small>
+                                        </div>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2 px-3 rounded-2 d-flex align-items-center gap-2"
+                                        href="{{ url_for('auth.login', role='Admin') }}">
+                                        <i class="bi bi-gear text-secondary" style="font-size:1.1rem;"></i>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-semibold text-secondary" style="font-size:0.82rem;">{{ t.admin_login }}</span>
+                                            <small class="text-muted" style="font-size:0.7rem;">Central IT / Admin</small>
+                                        </div>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item ms-1">
+                            <a class="btn btn-primary btn-sm px-2" style="font-size:0.75rem;" href="{{ url_for('auth.register') }}">
+                                {{ t.register }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="container mt-3">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <div id="main-content" class="main-content fade-in">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Official Government Footer -->
+    <footer class="footer bg-primary text-white pt-5 pb-3 mt-auto border-top border-4 border-warning">
+        <div class="container">
+            <div class="row g-4 justify-content-between">
+                <!-- Column 1: Government of India & Ministry of Coal Identity -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-white rounded p-1 me-3 d-flex align-items-center justify-content-center shadow-sm" style="height: 68px; width: 68px;">
+                            <img src="{{ url_for('static', filename='images/emblem_of_india.svg') }}"
+                                alt="State Emblem of India" style="max-height: 60px; max-width: 60px; object-fit: contain;">
+                        </div>
+                        <div class="bg-white rounded p-1 me-3 d-flex align-items-center justify-content-center shadow-sm" style="height: 68px; width: 68px;">
+                            <img src="{{ url_for('static', filename='images/ministry_of_coal_logo.svg') }}"
+                                alt="Ministry of Coal & Mines Seal" style="max-height: 60px; max-width: 60px; object-fit: contain;">
+                        </div>
+                        <div>
+                            <h5 class="fw-bold text-uppercase mb-0"
+                                style="font-family: 'Playfair Display', serif; letter-spacing: 0.5px; font-size: 1.05rem;">
+                                {{ t.ministry_coal }}
+                            </h5>
+                            <p class="small text-warning fw-bold mb-0">{{ t.govt_india }}</p>
+                            <small class="text-white-50 d-block">Directorate General of Mines Safety (DGMS)</small>
+                            <small class="text-white-50 d-block">{{ t.portal_name }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Column 2: Quick Links & Statutory Policies -->
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="fw-bold text-warning text-uppercase mb-3 border-bottom border-secondary d-inline-block pb-1">
+                        {{ t.quick_links }}</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="{{ url_for('index') }}"
+                                class="text-white text-decoration-none hover-accent"><i
+                                    class="bi bi-chevron-right me-1"></i> {{ t.home }}</a></li>
+                        <li class="mb-2"><a href="{{ url_for('governance.statutory_register') }}" class="text-white text-decoration-none hover-accent"><i
+                                    class="bi bi-chevron-right me-1"></i> {{ t.statutory_register }}</a></li>
+                        <li class="mb-2"><a href="{{ url_for('governance.statutory_reports') }}" class="text-white text-decoration-none hover-accent"><i
+                                    class="bi bi-chevron-right me-1"></i> {{ t.statutory_reports }}</a></li>
+                        <li class="mb-2"><a href="{{ url_for('governance.crypto_audit') }}" class="text-white text-decoration-none hover-accent"><i
+                                    class="bi bi-chevron-right me-1"></i> {{ t.crypto_audit }}</a></li>
+                        <li class="mb-2"><a href="{{ url_for('governance.gis_map') }}" class="text-white text-decoration-none hover-accent"><i
+                                    class="bi bi-chevron-right me-1"></i> {{ t.gis_map }}</a></li>
+                        <li class="mb-2"><a href="{{ url_for('governance.contractor_hub') }}" class="text-white text-decoration-none hover-accent"><i
+                                    class="bi bi-chevron-right me-1"></i> {{ t.contractor_hub }}</a></li>
+                    </ul>
+                </div>
+
+                <!-- Column 3: Contact & DGMS Helpline -->
+                <div class="col-lg-3 col-md-6">
+                    <h6 class="fw-bold text-warning text-uppercase mb-3 border-bottom border-secondary d-inline-block pb-1">
+                        {{ t.contact_us }}</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-3 d-flex">
+                            <i class="bi bi-geo-alt-fill me-2 text-warning fs-5"></i>
+                            <span>Shastri Bhawan, Dr. Rajendra Prasad Road,<br>New Delhi - 110001 | DGMS HQ Dhanbad</span>
+                        </li>
+                        <li class="mb-3 d-flex">
+                            <i class="bi bi-telephone-fill me-2 text-warning fs-5"></i>
+                            <div>
+                                <span class="d-block fw-bold">{{ t.helpline }}</span>
+                                <span class="fs-5 text-warning fw-bold">1800-11-2017</span>
+                            </div>
+                        </li>
+                        <li class="mb-3 d-flex">
+                            <i class="bi bi-envelope-fill me-2 text-warning fs-5"></i>
+                            <span>support-coalgov@nic.in</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Column 4: Social & National Seals -->
+                <div class="col-lg-3 col-md-6 text-md-center text-lg-start">
+                    <h6 class="fw-bold text-warning text-uppercase mb-3 border-bottom border-secondary d-inline-block pb-1">
+                        {{ t.connect_us }}</h6>
+                    <div class="d-flex gap-3 mb-4 justify-content-md-center justify-content-lg-start">
+                        <a href="https://twitter.com/CoalMinistry" target="_blank" class="btn btn-outline-light btn-sm rounded-circle social-icon"><i
+                                class="bi bi-twitter-x"></i></a>
+                        <a href="https://facebook.com" target="_blank" class="btn btn-outline-light btn-sm rounded-circle social-icon"><i
+                                class="bi bi-facebook"></i></a>
+                        <a href="https://youtube.com" target="_blank" class="btn btn-outline-light btn-sm rounded-circle social-icon"><i
+                                class="bi bi-youtube"></i></a>
+                        <a href="https://instagram.com" target="_blank" class="btn btn-outline-light btn-sm rounded-circle social-icon"><i
+                                class="bi bi-instagram"></i></a>
+                    </div>
+
+                    <!-- Government Portals Identity Strip -->
+                    <div class="bg-white rounded-3 p-2 d-inline-flex align-items-center gap-3 shadow-sm">
+                        <img src="{{ url_for('static', filename='images/emblem_of_india.svg') }}"
+                            alt="Emblem of India" height="34" class="px-1" title="Government of India">
+                        <div class="vr bg-secondary" style="height: 30px;"></div>
+                        <img src="{{ url_for('static', filename='images/digital_india_logo.svg') }}"
+                            alt="Digital India" height="28" title="Digital India">
+                        <div class="vr bg-secondary" style="height: 30px;"></div>
+                        <img src="{{ url_for('static', filename='images/nic_logo.svg') }}"
+                            alt="National Informatics Centre" height="24" title="National Informatics Centre (NIC)">
+                    </div>
+                </div>
+            </div>
+
+            <hr class="border-secondary opacity-25 my-4">
+
+            <div class="row align-items-center small text-white-50">
+                <div class="col-md-6 text-center text-md-start">
+                    <p class="mb-1">&copy; 2026 Ministry of Coal, Government of India. All Rights Reserved.</p>
+                    <p class="mb-0">Content Managed by Directorate General of Mines Safety (DGMS) & Coal India Limited (CIL).</p>
+                </div>
+                <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
+                    <p class="mb-0">Platform Designed & Powered by <span class="text-white fw-bold">National Informatics Centre (NIC)</span></p>
+                    <p class="mb-0">Cryptographic Standard: <span class="text-warning">SHA-256 Ledger (CMR 2017 Verified)</span></p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modals -->
+    {% block modals %}{% endblock %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Google Maps Location & Places Module -->
+    <script src="{{ url_for('static', filename='js/google_maps_location.js') }}"></script>
+    <!-- Google Maps JavaScript API (Required APIs: Maps JavaScript API, Places API, Geocoding API)
+         To enable: set GOOGLE_MAPS_API_KEY in .env then restart the server. -->
+    {% if google_maps_api_key %}
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&libraries=places,geometry&callback=initGoogleMapsServices&loading=async"></script>
+    {% else %}
+    <script>
+        // No API key configured — trigger fallback immediately after DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                if (window.__gmapsInitializers && window.__gmapsInitializers.length > 0) {
+                    // Flush all pending initializers in fallback mode
+                    console.warn('[GoogleMaps] No API key set. Triggering fallback mode for all map components.');
+                    // Mark as loaded-but-unavailable so fallback kicks in
+                    window.__gMapsFallbackOnly = true;
+                    while (window.__gmapsInitializers.length > 0) {
+                        const fn = window.__gmapsInitializers.shift();
+                        try { fn(); } catch(e) { /* handled internally */ }
+                    }
+                }
+            }, 200);
+        });
+    </script>
+    {% endif %}
+
+    <!-- STEP 2: Citizen Geolocation Tracking -->
+    {% if session.user_id and not session.is_admin %}
+    <script>
+        (function () {
+            let lastUpdate = 0;
+            let watchId = null;
+            const UPDATE_INTERVAL = 15000;
+            const trackingConsent = {{ "true" if session.tracking_consent else "false" }};
+
+        function sendLocation(position) {
+            if (!trackingConsent) return;
+
+            const now = Date.now();
+            if (now - lastUpdate < UPDATE_INTERVAL) return;
+
+            const data = {
+                lat: position.coords.latitude,
+                lon: position.coords.longitude
+            };
+
+            fetch('/api/update-location', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        lastUpdate = Date.now();
+                        console.log("[GeoTrack] Location synced successfully.");
+                    } else if (data.status === 'blocked' || data.status === 'idle') {
+                        console.log("[GeoTrack] Tracking suspended:", data.message);
+                        if (watchId) {
+                            navigator.geolocation.clearWatch(watchId);
+                            watchId = null;
+                        }
+                    }
+                })
+                .catch((error) => console.error('[GeoTrack] Error:', error));
+        }
+
+        function initTracking() {
+            if ("geolocation" in navigator && trackingConsent) {
+                watchId = navigator.geolocation.watchPosition(sendLocation,
+                    (err) => console.warn(`[GeoTrack] Error: ${err.message}`),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+                console.log("[GeoTrack] Safety monitoring initiated.");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initTracking);
+        }) ();
+    </script>
+    {% endif %}
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,546 @@
+{% extends "base.html" %}
+
+{% block title %}Case Dashboard - MineGuard Compliance Command{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0"><i class="bi bi-speedometer2"></i> My Dashboard</h3>
+                <span id="track-status" class="me-2"></span>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-primary" id="track-btn">
+                        <i class="bi bi-mic-fill"></i> Ask Status
+                    </button>
+                    <a href="{{ url_for('complaints.submit_complaint') }}"
+                        class="btn btn-warning fw-bold shadow-sm px-4">
+                        <i class="bi bi-plus-circle-fill me-1"></i> New Case
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <p class="text-muted mb-0">Welcome, <strong>{{ session.username }}</strong>! Here are all your
+                    reported cases.</p>
+                <div class="bg-light p-2 rounded border d-flex align-items-center">
+                    <div class="form-check form-switch mb-0">
+                        <input class="form-check-input" type="checkbox" id="trackingToggle" {% if
+                            session.tracking_consent %}checked{% endif %}>
+                        <label class="form-check-label small fw-bold" for="trackingToggle">
+                            <i class="bi bi-shield-lock-fill text-primary"></i> Live Safety Monitoring
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div id="privacy-notice" class="mt-2 small text-info"
+                style="display: {% if session.tracking_consent %}block{% else %}none{% endif %};">
+                <i class="bi bi-info-circle-fill"></i> Your location is <b>encrypted</b> and only accessed during active
+                emergencies.
+            </div>
+        </div>
+    </div>
+
+    <div id="notification-container">
+        {% if notifications %}
+        <div class="card mb-4 border-info shadow-sm">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-bell-fill"></i> New Notifications</h5>
+                <span class="badge bg-white text-info rounded-pill" id="notif-count">{{ notifications|length }}</span>
+            </div>
+            <div class="list-group list-group-flush" id="notification-list">
+                {% for notification in notifications %}
+                <div
+                    class="list-group-item d-flex justify-content-between align-items-center {% if not notification['is_read'] %}bg-light{% endif %}">
+                    <div>
+                        <i class="bi bi-info-circle text-primary me-2"></i> {{ notification['message'] }}
+                        <br>
+                        <small class="text-muted ms-4">{{ notification['created_at'] }}</small>
+                    </div>
+                    {% if not notification['is_read'] %}
+                    <a href="{{ url_for('complaints.mark_notification_read', notification_id=notification['id']) }}"
+                        class="btn btn-sm btn-outline-primary" title="Mark as Read">
+                        <i class="bi bi-check2"></i>
+                    </a>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if complaints or filter_search or filter_category or filter_status or filter_priority %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4 class="mb-0"><i class="bi bi-list-ul"></i> My Reported Cases</h4>
+        </div>
+
+        <!-- User Filter Section -->
+        <div class="card-body border-bottom bg-light">
+            <form method="GET" action="{{ url_for('complaints.user_dashboard') }}" class="row g-3">
+                <div class="col-12">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" name="search" placeholder="Search my cases..."
+                            value="{{ filter_search }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" name="city" onchange="this.form.submit()">
+                        <option value="All">All Mine Units</option>
+                        <option value="Open Cast Mine" {% if filter_city=='Open Cast Mine' %}selected{% endif %}>Open Cast Mine</option>
+                        <option value="Underground Mine" {% if filter_city=='Underground Mine' %}selected{% endif %}>Underground Mine</option>
+                        <option value="Coal Handling Plant" {% if filter_city=='Coal Handling Plant' %}selected{% endif %}>Coal Handling Plant</option>
+                        <option value="Workshop & Maintenance" {% if filter_city=='Workshop & Maintenance' %}selected{% endif %}>Workshop & Maintenance</option>
+                        <option value="Mine Colony" {% if filter_city=='Mine Colony' %}selected{% endif %}>Mine Colony</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <select class="form-select" name="category" onchange="this.form.submit()">
+                        <option value="All">All Categories</option>
+                        <option value="Occupational Safety" {% if filter_category=='Occupational Safety' %}selected{% endif %}>Occupational Safety</option>
+                        <option value="Mine Operations" {% if filter_category=='Mine Operations' %}selected{% endif %}>Mine Operations</option>
+                        <option value="Ventilation & Gas Monitoring" {% if filter_category=='Ventilation & Gas Monitoring' %}selected{% endif %}>Ventilation & Gas Monitoring</option>
+                        <option value="Electrical & Mechanical" {% if filter_category=='Electrical & Mechanical' %}selected{% endif %}>Electrical & Mechanical</option>
+                        <option value="Environmental Compliance" {% if filter_category=='Environmental Compliance' %}selected{% endif %}>Environmental Compliance</option>
+                        <option value="Labor Welfare" {% if filter_category=='Labor Welfare' %}selected{% endif %}>Labor Welfare</option>
+                        <option value="Regulatory Compliance" {% if filter_category=='Regulatory Compliance' %}selected{% endif %}>Regulatory Compliance</option>
+                        <option value="Community & Land Relations" {% if filter_category=='Community & Land Relations' %}selected{% endif %}>Community & Land Relations</option>
+                        <option value="Other" {% if filter_category=='Other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <select class="form-select" name="status" onchange="this.form.submit()">
+                        <option value="All">All Statuses</option>
+                        <option value="Pending" {% if filter_status=='Pending' %}selected{% endif %}>Pending
+                        </option>
+                        <option value="In Progress" {% if filter_status=='In Progress' %}selected{% endif %}>In
+                            Progress</option>
+                        <option value="Resolved" {% if filter_status=='Resolved' %}selected{% endif %}>Resolved
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <select class="form-select" name="priority" onchange="this.form.submit()">
+                        <option value="All">All Priorities</option>
+                        <option value="Low" {% if filter_priority=='Low' %}selected{% endif %}>Low</option>
+                        <option value="Medium" {% if filter_priority=='Medium' %}selected{% endif %}>Medium</option>
+                        <option value="High" {% if filter_priority=='High' %}selected{% endif %}>High</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <a href="{{ url_for('complaints.user_dashboard') }}" class="btn btn-outline-secondary w-100">
+                        Clear
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div class="card-body">
+            {% if complaints %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Mine Unit</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for complaint in complaints %}
+                        <tr>
+                            <td><strong>#{{ complaint['id'] }}</strong></td>
+                            <td><small class="fw-bold text-primary">{{ complaint['city'] }}</small></td>
+                            <td>{{ complaint['title'] }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ complaint['category'] }}</span>
+                            </td>
+                            <td>
+                                {% if complaint['priority'] == 'High' %}
+                                <span class="badge badge-priority-high">High</span>
+                                {% elif complaint['priority'] == 'Medium' %}
+                                <span class="badge badge-priority-medium">Medium</span>
+                                {% else %}
+                                <span class="badge badge-priority-low">Low</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if complaint['status'] == 'Pending' %}
+                                <span class="badge status-pending">{{ complaint['status'] }}</span>
+                                {% elif complaint['status'] == 'In Progress' %}
+                                <span class="badge status-in-progress">{{ complaint['status'] }}</span>
+                                {% else %}
+                                <span class="badge status-resolved">{{ complaint['status'] }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ complaint['created_at'][:10] }}</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                    data-bs-target="#viewModal{{ complaint['id'] }}">
+                                    <i class="bi bi-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center p-5">
+            <i class="bi bi-inbox text-muted" style="font-size: 4rem;"></i>
+            <h4 class="mt-3">No complaints yet</h4>
+            <p class="text-muted">You haven't submitted any complaints. Click the button below to submit your first
+                complaint.</p>
+            <a href="{{ url_for('complaints.submit_complaint') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Submit Your First Complaint
+            </a>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+</div>
+{% endblock %}
+
+{% block modals %}
+{% if complaints %}
+{% for complaint in complaints %}
+<!-- View Modal {{ complaint['id'] }} -->
+<div class="modal fade" id="viewModal{{ complaint['id'] }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Complaint Details #{{ complaint['id'] }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-start">
+                <div class="mb-3">
+                    <label class="fw-bold">Title:</label>
+                    <p>{{ complaint['title'] }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold">Description:</label>
+                    <p class="border p-3 bg-light rounded">{{ complaint['description'] }}</p>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold">Category:</label>
+                    <p><span class="badge bg-secondary">{{ complaint['category'] }}</span>
+                    </p>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold">Priority:</label>
+                    <p>
+                        {% if complaint['priority'] == 'High' %}
+                        <span class="badge badge-priority-high">High</span>
+                        {% elif complaint['priority'] == 'Medium' %}
+                        <span class="badge badge-priority-medium">Medium</span>
+                        {% else %}
+                        <span class="badge badge-priority-low">Low</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="mb-3">
+                    <label class="fw-bold">Status:</label>
+                    <p>
+                        {% if complaint['status'] == 'Pending' %}
+                        <span class="badge status-pending">{{ complaint['status'] }}</span>
+                        {% elif complaint['status'] == 'In Progress' %}
+                        <span class="badge status-in-progress">{{ complaint['status'] }}</span>
+                        {% else %}
+                        <span class="badge status-resolved">{{ complaint['status'] }}</span>
+                        {% endif %}
+                    </p>
+                </div>
+                {% if complaint['admin_response'] %}
+                <div class="mb-3">
+                    <label class="fw-bold">Admin Response:</label>
+                    <div class="alert alert-info">
+                        {{ complaint['admin_response'] }}
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if complaint['status'] == 'Resolved' %}
+                <hr>
+                <div class="mb-3">
+                    <label class="fw-bold">Rate Service Satisfaction:</label>
+                    {% if complaint['rating'] %}
+                    <div class="text-warning h5">
+                        {% for i in range(complaint['rating']) %}
+                        <i class="bi bi-star-fill"></i>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <form action="{{ url_for('complaints.rate_complaint', complaint_id=complaint['id']) }}"
+                        method="POST" class="mt-2">
+                        <select name="rating" class="form-select form-select-sm d-inline-block w-auto me-2">
+                            <option value="5">Excellent (5)</option>
+                            <option value="4">Good (4)</option>
+                            <option value="3">Average (3)</option>
+                            <option value="2">Poor (2)</option>
+                            <option value="1">Bad (1)</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-success">Submit Rating</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="fw-bold">Submitted On:</label>
+                    <p>{{ complaint['created_at'] }}</p>
+                </div>
+
+                {% if complaint['vision_results'] %}
+                <div class="mb-3 mt-3 border p-3 rounded bg-light border-start border-4 border-info">
+                    <label class="fw-bold text-info small text-uppercase mb-2 d-block"><i class="bi bi-robot"></i> AI
+                        Image Analysis:</label>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for detection in complaint['vision_results'] %}
+                        <span class="badge bg-white text-dark border p-2">
+                            <i class="bi bi-tag-fill text-info me-1"></i> {{ detection.label }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Step 9: Ethical AI Transparency -->
+                <div class="mb-3 mt-3 border p-3 rounded bg-light border-start border-4 border-warning">
+                    <label class="fw-bold text-warning small text-uppercase mb-2 d-block"><i
+                            class="bi bi-shield-check"></i> Ethical AI & Transparency:</label>
+                    <p class="small text-muted mb-2">This grievance was processed using fair AI routing logic. Decisions
+                        are based on keyword urgency and visual evidence.</p>
+                    {% if complaint['is_escalated'] %}
+                    <div class="alert alert-warning py-2 mb-0 small">
+                        <strong>Escalated by AI:</strong> {{ complaint['escalation_reason'] or 'High risk/Urgency
+                        detected.' }}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success py-2 mb-0 small">
+                        <strong>Standard Route:</strong> Verified authentic and routed to {{ complaint['assigned_to']
+                        }}.
+                    </div>
+                    {% endif %}
+                </div>
+                {% if complaint['attachment'] %}
+                <div class="mb-3">
+                    <label class="fw-bold d-block mb-2"><i class="bi bi-camera"></i> Evidence Photo:</label>
+                    <a href="{{ url_for('static', filename='uploads/' + complaint['attachment']) }}" target="_blank">
+                        <img src="{{ url_for('static', filename='uploads/' + complaint['attachment']) }}"
+                            class="img-fluid rounded border shadow-sm" style="max-height: 200px; cursor: zoom-in;"
+                            alt="Evidence Photo">
+                    </a>
+                    <div class="mt-2">
+                        <a href="{{ url_for('static', filename='uploads/' + complaint['attachment']) }}" target="_blank"
+                            class="btn btn-sm btn-outline-primary shadow-sm">
+                            <i class="bi bi-fullscreen"></i> View Full Size
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if complaint['audio_file'] %}
+                <div class="mb-4">
+                    <label class="fw-bold text-primary d-block mb-2">
+                        <i class="bi bi-mic-fill"></i> My Voice Note
+                    </label>
+                    <div class="bg-white p-3 rounded-3 border shadow-sm">
+                        <div class="d-flex align-items-center gap-3">
+                            <audio controls class="flex-grow-1" id="audio-user-{{ complaint.id }}"
+                                onloadedmetadata="const duration = Math.round(this.duration); document.getElementById('user-duration-{{ complaint.id }}').innerText = duration + 's'">
+                                <source src="{{ url_for('complaints.serve_audio', filename=complaint.audio_file) }}">
+                                Your browser does not support audio playback.
+                            </audio>
+                            <span class="badge bg-light text-dark border">
+                                <i class="bi bi-clock"></i> <span id="user-duration-{{ complaint.id }}">--</span>
+                            </span>
+                        </div>
+                        {% if complaint['transcript'] %}
+                        <div class="mt-3 pt-3 border-top">
+                            <label class="text-muted small fw-bold text-uppercase"><i class="bi bi-chat-left-text"></i>
+                                AI Transcript:</label>
+                            <p class="mb-0 fst-italic text-secondary" style="font-size: 0.9rem;">"{{
+                                complaint['transcript'] }}"</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% if complaint['latitude'] and complaint['longitude'] %}
+                <!-- Exact Property Location with Google Maps -->
+                <div class="mb-4">
+                    <div class="card border rounded-3 overflow-hidden shadow-sm">
+                        <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                            <div>
+                                <label class="fw-bold text-dark mb-0"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Exact Property / Case Location:</label>
+                                <div class="small text-muted">{{ complaint['location'] or complaint['city'] }}</div>
+                            </div>
+                            <a href="https://www.google.com/maps/dir/?api=1&destination={{ complaint['latitude'] }},{{ complaint['longitude'] }}{% if complaint['google_place_id'] %}&destination_place_id={{ complaint['google_place_id'] }}{% endif %}"
+                                target="_blank" rel="noopener noreferrer" id="user-directions-btn-{{ complaint.id }}"
+                                class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">
+                                <i class="bi bi-cursor-fill me-1"></i> Get Directions
+                            </a>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="user-map-{{ complaint.id }}" class="location-detail-map" style="height: 240px; border: none; border-radius: 0;"></div>
+                        </div>
+                        <div class="card-footer bg-light py-1 px-3 d-flex justify-content-between align-items-center small text-muted">
+                            <span><i class="bi bi-crosshair me-1"></i> {{ "%.5f"|format(complaint['latitude']) }}, {{ "%.5f"|format(complaint['longitude']) }}</span>
+                            {% if complaint['google_place_id'] %}
+                            <span><i class="bi bi-google me-1"></i> Place ID: <code>{{ complaint['google_place_id'] }}</code></span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% elif complaint['location'] %}
+                <div class="mb-3">
+                    <label class="fw-bold"><i class="bi bi-geo-alt-fill text-danger me-1"></i> Location / Mine Zone:</label>
+                    <p class="mb-0">{{ complaint['location'] }}</p>
+                </div>
+                {% endif %}
+
+                <div class="mb-3">
+                    <label class="fw-bold">Last Updated:</label>
+                    <p>{{ complaint['updated_at'] }}</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/voice_input.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Success Announcement
+        const successAlert = document.querySelector('.alert-success');
+        if (successAlert) {
+            const text = successAlert.innerText || successAlert.textContent;
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Voice Tracking Initialization
+        const trackModule = new VoiceInputModule({
+            btnId: 'track-btn',
+            statusId: 'track-status',
+            mode: 'track'
+        });
+
+        // Initialize Map Viewers for each Complaint Modal
+        {% if complaints %}
+        {% for complaint in complaints %}
+        {% if complaint['latitude'] and complaint['longitude'] %}
+        new GoogleMapsLocationViewer({
+            mapId: 'user-map-{{ complaint.id }}',
+            lat: {{ complaint['latitude'] }},
+            lng: {{ complaint['longitude'] }},
+            title: {{ complaint['title']|tojson }},
+            address: {{ (complaint['location'] or complaint['city'])|tojson }},
+            placeId: {{ (complaint['google_place_id'] or '')|tojson }},
+            modalId: 'viewModal{{ complaint.id }}',
+            directionsBtnId: 'user-directions-btn-{{ complaint.id }}'
+        });
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+
+        // Privacy Toggle Handling
+        const trackingToggle = document.getElementById('trackingToggle');
+        const privacyNotice = document.getElementById('privacy-notice');
+
+        if (trackingToggle) {
+            trackingToggle.addEventListener('change', function () {
+                const enabled = this.checked;
+
+                fetch('/api/toggle-tracking', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ enabled: enabled })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            privacyNotice.style.display = enabled ? 'block' : 'none';
+                            // Trigger a slight animation or toast
+                            if (enabled) {
+                                console.log("[Privacy] Safety monitoring enabled.");
+                            } else {
+                                console.log("[Privacy] Safety monitoring disabled.");
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error toggling tracking:', error);
+                        this.checked = !enabled; // Revert on error
+                    });
+            });
+        }
+
+        // Notification Polling Logic
+        function fetchNotifications() {
+            fetch('/api/notifications')
+                .then(response => response.json())
+                .then(notifications => {
+                    const container = document.getElementById('notification-container');
+                    if (notifications.length > 0) {
+                        let html = `
+                            <div class="card mb-4 border-info shadow-sm">
+                                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="bi bi-bell-fill"></i> New Notifications</h5>
+                                    <span class="badge bg-white text-info rounded-pill" id="notif-count">${notifications.length}</span>
+                                </div>
+                                <div class="list-group list-group-flush" id="notification-list">
+                        `;
+                        notifications.forEach(n => {
+                            html += `
+                                <div class="list-group-item d-flex justify-content-between align-items-center bg-light">
+                                    <div>
+                                        <i class="bi bi-info-circle text-primary me-2"></i> ${n.message}
+                                        <br>
+                                        <small class="text-muted ms-4">${n.created_at}</small>
+                                    </div>
+                                    <a href="/user/mark-read/${n.id}" class="btn btn-sm btn-outline-primary" title="Mark as Read">
+                                        <i class="bi bi-check2"></i>
+                                    </a>
+                                </div>
+                            `;
+                        });
+                        html += `</div></div>`;
+                        container.innerHTML = html;
+                    } else {
+                        container.innerHTML = ''; // "Remove precious" (previous)
+                    }
+                })
+                .catch(err => console.error("Notification pull error:", err));
+        }
+
+        // Poll every 10 seconds
+        setInterval(fetchNotifications, 10000);
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Cryptographic SHA-256 Audit Trail | MineGuard CoalGov{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('governance.dashboard') }}" class="text-decoration-none text-muted small">
+                    <i class="bi bi-arrow-left me-1"></i> Command Center
+                </a>
+                <span class="text-muted">/</span>
+                <span class="badge bg-dark">Immutable SHA-256 Ledger</span>
+            </div>
+            <h2 class="fw-bold text-dark mb-0">Cryptographic Governance & Statutory Audit Ledger</h2>
+            <p class="text-muted mb-0">Tamper-evident blockchain-style hash chain verifying all statutory updates, field sign-offs, and compliance modifications.</p>
+        </div>
+
+        <div>
+            {% if integrity.is_valid %}
+            <div class="badge bg-success-subtle text-success border border-success px-3 py-2 fs-6">
+                <i class="bi bi-shield-lock-fill me-1"></i> Ledger Integrity: 100% Verified & Valid
+            </div>
+            {% else %}
+            <div class="badge bg-danger-subtle text-danger border border-danger px-3 py-2 fs-6">
+                <i class="bi bi-shield-slash-fill me-1"></i> Warning: Integrity Violation at Block #{{ integrity.tampered_block_index }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Audit Blocks Feed -->
+    <div class="d-flex flex-column gap-3">
+        {% for block in blocks %}
+        <div class="card shadow-sm border-0 border-start border-4 {% if block.block_index == 1 %}border-primary{% else %}border-dark{% endif %} p-3">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-dark font-monospace">Block #{{ block.block_index }}</span>
+                    <span class="badge bg-primary-subtle text-primary border border-primary fw-bold text-uppercase">{{ block.action_type }}</span>
+                    <span class="fw-bold text-dark">{{ block.entity_affected }}</span>
+                </div>
+                <div class="small text-muted font-monospace"><i class="bi bi-clock me-1"></i>{{ block.timestamp }}</div>
+            </div>
+
+            <p class="small text-muted mb-2">{{ block.details }}</p>
+
+            <div class="p-2 bg-light rounded-3 font-monospace small text-truncate">
+                <div class="text-muted" style="font-size: 0.75rem;">
+                    <strong>Prev Hash:</strong> {{ block.previous_hash }}
+                </div>
+                <div class="text-primary fw-bold" style="font-size: 0.75rem;">
+                    <strong>Block Hash:</strong> {{ block.current_hash }}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mt-2 small text-muted">
+                <span><i class="bi bi-person-fill me-1"></i>Actor: <strong>{{ block.actor_name }}</strong> (ID: {{ block.actor_id }})</span>
+                <button class="btn btn-sm btn-link text-decoration-none p-0" type="button" data-bs-toggle="collapse" data-bs-target="#payload{{ block.id }}">
+                    Inspect Payload JSON <i class="bi bi-chevron-down"></i>
+                </button>
+            </div>
+
+            <div class="collapse mt-2" id="payload{{ block.id }}">
+                <pre class="bg-dark text-success p-3 rounded-3 small mb-0 font-monospace" style="max-height: 200px; overflow-y: auto;">{{ block.payload_json }}</pre>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}

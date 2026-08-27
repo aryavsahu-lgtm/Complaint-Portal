@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.serv_title }} - {{ t.portal_name }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <!-- Hero Section -->
+    <div class="row mb-5 align-items-center">
+        <div class="col-lg-6">
+            <h1 class="display-4 fw-bold mb-3" style="color: var(--primary-color);">{{ t.serv_title }}</h1>
+            <p class="lead text-muted">{{ t.serv_subtitle }}</p>
+            <div class="d-flex gap-3 mt-4">
+                <div class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">
+                    <i class="bi bi-cpu me-1"></i> {{ t.dgms_certified }}
+                </div>
+                <div class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">
+                    <i class="bi bi-clock-history me-1"></i> 24/7 Access
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 text-center">
+            <div class="p-4 bg-primary bg-gradient rounded-4 shadow-lg text-white">
+                <i class="bi bi-shield-check display-1 mb-3"></i>
+                <h3>{{ t.coalgov_command }}</h3>
+                <p>{{ t.positive_works_sub }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Services Grid -->
+    <div class="row g-4">
+        {% for service in services %}
+        {% set name_key = service.id + '_name' %}
+        {% set desc_key = service.id + '_desc' %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm card-hover-effect rounded-4 p-2">
+                <div class="card-body text-center">
+                    <div class="icon-box bg-{{ service.color }} text-white rounded-4 mx-auto mb-4 d-flex align-items-center justify-content-center"
+                        style="width: 70px; height: 70px;">
+                        <i class="bi {{ service.icon }} fs-2"></i>
+                    </div>
+                    <h5 class="fw-bold mb-3">{{ t[name_key] }}</h5>
+                    <p class="text-muted small mb-4">{{ t[desc_key] }}</p>
+                    <button class="btn btn-{{ service.color }} w-100 rounded-pill shadow-sm">
+                        <i class="bi bi-arrow-right-circle me-2"></i> {{ t.apply_now }}
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Help Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card border-0 bg-dark text-white rounded-4 overflow-hidden">
+                <div class="card-body p-5">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <h2 class="fw-bold mb-3">Need help with a service?</h2>
+                            <p class="text-white-50 lead mb-0">Our AI assistant can guide you through the application
+                                process for any of these municipal services.</p>
+                        </div>
+                        <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
+                            <a href="{{ url_for('chatbot.chatbot_page') }}"
+                                class="btn btn-light btn-lg px-5 rounded-pill fw-bold">
+                                Talk to AI Assistant
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card-hover-effect {
+        transition: all 0.3s ease;
+    }
+
+    .card-hover-effect:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, .1) !important;
+    }
+
+    .icon-box {
+        transition: transform 0.3s ease;
+    }
+
+    .card-hover-effect:hover .icon-box {
+        transform: scale(1.1) rotate(5deg);
+    }
+</style>
+{% endblock %}

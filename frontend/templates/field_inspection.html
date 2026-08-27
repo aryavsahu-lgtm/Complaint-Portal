@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Geo-Tagged Field Inspection & Observation | MineGuard CoalGov{% endblock %}
+
+{% block extra_css %}
+<style>
+    .inspection-card {
+        max-width: 800px;
+        margin: 0 auto;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e2e8f0;
+    }
+    .gps-badge {
+        background: #ecfdf5;
+        border: 1px solid #10b981;
+        color: #065f46;
+        border-radius: 10px;
+        padding: 10px 16px;
+        font-family: monospace;
+    }
+    .offline-banner {
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        color: #92400e;
+        border-radius: 12px;
+        padding: 12px 18px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Offline PWA Synchronization Status Banner -->
+    <div id="offlineBanner" class="offline-banner d-flex align-items-center justify-content-between mb-4 d-none">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-wifi-off fs-4"></i>
+            <div>
+                <strong>Offline Mode Active</strong>
+                <div class="small">Observations will be saved to local encrypted device storage and automatically synced upon network restoration.</div>
+            </div>
+        </div>
+        <button id="syncNowBtn" class="btn btn-warning btn-sm fw-bold">Sync Cached (0)</button>
+    </div>
+
+    <div class="inspection-card p-4 p-md-5">
+        
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <a href="{{ url_for('governance.dashboard') }}" class="text-decoration-none text-muted small">
+                <i class="bi bi-arrow-left me-1"></i> Return to Command Center
+            </a>
+            <span class="badge bg-danger-subtle text-danger border border-danger px-3 py-1">
+                <i class="bi bi-shield-exclamation me-1"></i> DGMS Statutory Field Log
+            </span>
+        </div>
+
+        <h2 class="fw-bold text-dark mb-1">Geo-Tagged Field Observation</h2>
+        <p class="text-muted mb-4">Capture mine-level safety, environmental, ventilation, or operational hazards with verifiable GPS coordinates and tamper-proof evidence.</p>
+
+        <!-- Live GPS Coordinate Display Card -->
+        <div class="gps-badge mb-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-geo-alt-fill text-success fs-4"></i>
+                <div>
+                    <div class="small text-uppercase fw-bold text-muted">Field GPS Coordinates</div>
+                    <div class="fw-bold" id="gpsDisplay">Acquiring high-precision GPS lock...</div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-success" id="refreshGpsBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i> Refresh GPS
+            </button>
+        </div>
+
+        <form id="inspectionForm" method="POST" action="{{ url_for('governance.field_inspection') }}" enctype="multipart/form-data">
+            
+            <!-- Hidden GPS Fields -->
+            <input type="hidden" name="latitude" id="inputLat" value="22.3385">
+            <input type="hidden" name="longitude" id="inputLon" value="82.5925">
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Target Mine / Colliery</label>
+                    <select name="mine_id" id="mineSelect" class="form-select" required>
+                        {% for m in mines %}
+                        <option value="{{ m.id }}" data-lat="{{ m.latitude }}" data-lon="{{ m.longitude }}">
+                            {{ m.name }} ({{ m.subsidiary }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Operational Shift</label>
+                    <select name="shift" class="form-select" required>
+                        <option value="Shift A (Morning)">Shift A (06:00 - 14:00) Morning</option>
+                        <option value="Shift B (Afternoon)">Shift B (14:00 - 22:00) Afternoon</option>
+                        <option value="Shift C (Night)">Shift C (22:00 - 06:00) Night</option>
+                        <option value="General Shift">General Shift (09:00 - 17:00)</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Specific Location / Pit / Seam / Bench</label>
+                    <input type="text" name="location_pit_seam" class="form-control" placeholder="e.g. Seam XV Panel 4, Haul Road Bench No. 3" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Violation / Hazard Category</label>
+                    <select name="violation_category" class="form-select" required>
+                        <option value="Safety">Safety (Roof/Side fall, Berm, PPE)</option>
+                        <option value="Ventilation">Ventilation & Gas Build-up (CH4, CO)</option>
+                        <option value="Operations">Operations & Slope Stability</option>
+                        <option value="Equipment">HEMM & Electrical Machinery</option>
+                        <option value="Environment">Environmental (Dust, AMD Water, Effluent)</option>
+                    </select>
+                </div>
+
+                <div class="col-md-8">
+                    <label class="form-label small fw-bold">Hazard / Violation Title</label>
+                    <input type="text" name="violation_title" class="form-control" placeholder="Brief summary of condition observed" required>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">Risk Severity Level</label>
+                    <select name="risk_level" class="form-select fw-bold text-danger" required>
+                        <option value="Critical" class="text-danger">🔴 Critical (Immediate Hazard)</option>
+                        <option value="High" class="text-warning">🟠 High (Elevated Risk)</option>
+                        <option value="Medium" selected class="text-info">🟡 Medium (Procedural)</option>
+                        <option value="Low" class="text-success">🟢 Low (Minor Maintenance)</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label small fw-bold">Detailed Field Description & Evidence Notes</label>
+                    <textarea name="description" class="form-control" rows="4" placeholder="Describe the physical condition, equipment involved, approximate dimensions, and immediate precautions initiated..." required></textarea>
+                </div>
+
+                <!-- Multimodal Evidence Capture -->
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold"><i class="bi bi-camera me-1"></i> Photo / Camera Evidence</label>
+                    <input type="file" name="photo_evidence" class="form-control" accept="image/*" capture="environment">
+                    <div class="form-text small text-muted">EXIF timestamp & image authenticity will be automatically verified.</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold">Inspector Name / Employee ID</label>
+                    <input type="text" name="inspector_name" class="form-control" value="{{ session.get('username', 'Safety Officer') }}" required>
+                </div>
+
+                <div class="col-12 mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm">
+                        <i class="bi bi-shield-check me-2"></i> Submit & Broadcast to Command Center
+                    </button>
+                </div>
+
+            </div>
+        </form>
+
+    </div>
+
+</div>
+
+<script>
+    // Automatic GPS Geolocation with High Accuracy
+    function getHighAccuracyLocation() {
+        const display = document.getElementById('gpsDisplay');
+        const latInput = document.getElementById('inputLat');
+        const lonInput = document.getElementById('inputLon');
+
+        if ("geolocation" in navigator) {
+            display.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Pinpointing GPS satellites...';
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lon = position.coords.longitude.toFixed(6);
+                    const acc = position.coords.accuracy ? position.coords.accuracy.toFixed(1) : '5.0';
+                    latInput.value = lat;
+                    lonInput.value = lon;
+                    display.innerHTML = `<strong>${lat}° N, ${lon}° E</strong> <span class="badge bg-success ms-2">±${acc}m Accuracy</span>`;
+                },
+                function(error) {
+                    // Fallback to mine site default
+                    const mineSelect = document.getElementById('mineSelect');
+                    const opt = mineSelect.options[mineSelect.selectedIndex];
+                    const lat = opt.getAttribute('data-lat') || '22.3385';
+                    const lon = opt.getAttribute('data-lon') || '82.5925';
+                    latInput.value = lat;
+                    lonInput.value = lon;
+                    display.innerHTML = `<strong>${lat}° N, ${lon}° E</strong> <span class="badge bg-secondary ms-2">Mine Site Geo-Lock</span>`;
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        }
+    }
+
+    document.getElementById('refreshGpsBtn').addEventListener('click', getHighAccuracyLocation);
+    document.addEventListener('DOMContentLoaded', getHighAccuracyLocation);
+
+    // Online / Offline PWA Network Listener
+    function updateOnlineStatus() {
+        const banner = document.getElementById('offlineBanner');
+        if (!navigator.onLine) {
+            banner.classList.remove('d-none');
+        } else {
+            banner.classList.add('d-none');
+        }
+    }
+    window.addEventListener('online', updateOnlineStatus);
+    window.addEventListener('offline', updateOnlineStatus);
+    updateOnlineStatus();
+</script>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}{{ t.track_complaint }} - {{ t.portal_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-lg border-0 rounded-4 overflow-hidden mb-5">
+            <div class="card-header bg-primary text-white p-4 text-center">
+                <h2 class="mb-0 fw-bold"><i class="bi bi-search"></i> {{ t.track_complaint }}</h2>
+                <p class="mb-0 mt-2 opacity-75">{{ t.positive_works_sub }}
+                </p>
+            </div>
+            <div class="card-body p-5">
+                <form action="{{ url_for('complaints.track_complaint') }}" method="POST" class="mb-4">
+                    <div class="input-group input-group-lg shadow-sm">
+                        <span class="input-group-text bg-white border-end-0"><i
+                                class="bi bi-hash text-primary"></i></span>
+                        <input type="text" name="ref_no" class="form-control border-start-0 ps-0"
+                            placeholder="Enter Reference Number (e.g., GRV-20260211-ABCD)" value="{{ ref_no or '' }}"
+                            required>
+                        <button type="submit" class="btn btn-primary px-5 fw-bold">{{ t.track_status }}</button>
+                    </div>
+                </form>
+
+                {% if complaint %}
+                <div class="mt-5 animate__animated animate__fadeIn">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+                        <h4 class="mb-0 fw-bold text-dark">Grievance Details</h4>
+                        <span class="badge bg-light text-primary border px-3 py-2 rounded-pill">
+                            Ref: {{ complaint['ref_no'] }}
+                        </span>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold mb-1">Title</label>
+                            <p class="h5 fw-bold">{{ complaint['title'] }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold mb-1">Status</label>
+                            <div>
+                                {% if complaint['status'] == 'Pending' %}
+                                <span class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm">
+                                    <i class="bi bi-clock-history me-1"></i> {{ complaint['status'] }}
+                                </span>
+                                {% elif complaint['status'] == 'In Progress' %}
+                                <span class="badge bg-info text-white px-3 py-2 rounded-pill shadow-sm">
+                                    <i class="bi bi-gear-fill me-1"></i> {{ complaint['status'] }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-success text-white px-3 py-2 rounded-pill shadow-sm">
+                                    <i class="bi bi-check-circle-fill me-1"></i> {{ complaint['status'] }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold mb-1">Category</label>
+                            <p class="mb-0"><span class="badge bg-light text-dark border">{{ complaint['category']
+                                    }}</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="text-muted small text-uppercase fw-bold mb-1">Priority</label>
+                            <p class="mb-0">
+                                {% if complaint['priority'] == 'High' %}
+                                <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i>
+                                    High</span>
+                                {% elif complaint['priority'] == 'Medium' %}
+                                <span class="text-warning fw-bold"><i class="bi bi-exclamation-circle"></i>
+                                    Medium</span>
+                                {% else %}
+                                <span class="text-info fw-bold"><i class="bi bi-info-circle"></i> Low</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-12">
+                            <label class="text-muted small text-uppercase fw-bold mb-1">Description</label>
+                            <div class="p-3 bg-light rounded-3 border">
+                                {{ complaint['description'] }}
+                            </div>
+                        </div>
+
+                        <!-- Exact Property / Case Location with Google Maps Integration -->
+                        <div class="col-12 mt-4">
+                            <div class="card border rounded-4 overflow-hidden shadow-sm">
+                                <div class="card-header bg-white py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                    <div>
+                                        <h6 class="mb-0 fw-bold text-dark">
+                                            <i class="bi bi-geo-alt-fill text-danger me-1"></i> Exact Incident / Property Location
+                                        </h6>
+                                        <small class="text-muted">{{ complaint['location'] or 'Location Coordinates Pinned' }}</small>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        {% if complaint['latitude'] and complaint['longitude'] %}
+                                        <span class="coordinate-badge">
+                                            <i class="bi bi-crosshair me-1"></i>{{ "%.5f"|format(complaint['latitude']) }}, {{ "%.5f"|format(complaint['longitude']) }}
+                                        </span>
+                                        <a href="https://www.google.com/maps/dir/?api=1&destination={{ complaint['latitude'] }},{{ complaint['longitude'] }}{% if complaint['google_place_id'] %}&destination_place_id={{ complaint['google_place_id'] }}{% endif %}"
+                                            target="_blank" rel="noopener noreferrer" id="track-directions-btn"
+                                            class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm">
+                                            <i class="bi bi-cursor-fill me-1"></i> Get Directions
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    {% if complaint['latitude'] and complaint['longitude'] %}
+                                    <div id="track-location-map" class="location-detail-map" style="height: 320px; border: none; border-radius: 0;"></div>
+                                    {% else %}
+                                    <div class="p-4 text-center text-muted">
+                                        <i class="bi bi-geo-alt text-secondary" style="font-size: 2rem;"></i>
+                                        <p class="mb-0 mt-2 small">No exact map coordinates were saved for this case.</p>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% if complaint['google_place_id'] %}
+                                <div class="card-footer bg-light py-2 text-muted small d-flex justify-content-between">
+                                    <span><i class="bi bi-google me-1"></i> Verified Google Place</span>
+                                    <code class="text-secondary">{{ complaint['google_place_id'] }}</code>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if complaint['admin_response'] %}
+                        <div class="col-12 mt-4">
+                            <div class="alert alert-primary border-0 shadow-sm rounded-4 p-4">
+                                <h6 class="fw-bold mb-2"><i class="bi bi-reply-fill"></i> Official Response:</h6>
+                                <p class="mb-0">{{ complaint['admin_response'] }}</p>
+                                <hr class="my-3">
+                                <small class="text-muted">Updated at: {{ complaint['updated_at'] }}</small>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% elif ref_no %}
+                <!-- This part is handled by flash messages in the route -->
+                {% else %}
+                <div class="text-center py-5 mt-4">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2643/2643505.png" alt="Track"
+                        style="width: 120px; opacity: 0.3;">
+                    <h5 class="text-muted mt-4">Ready to track your grievance?</h5>
+                    <p class="text-muted small">Your unique reference number was provided upon submission.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Help Info -->
+        <div class="text-center">
+            <p class="text-muted">Need more details? <a href="{{ url_for('auth.login') }}" class="fw-bold">Login to your
+                    account</a> to see full history and evidence photos.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if complaint and complaint['latitude'] and complaint['longitude'] %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        new GoogleMapsLocationViewer({
+            mapId: 'track-location-map',
+            lat: {{ complaint['latitude'] }},
+            lng: {{ complaint['longitude'] }},
+            title: {{ complaint['title']|tojson }},
+            address: {{ (complaint['location'] or complaint['city'])|tojson }},
+            placeId: {{ (complaint['google_place_id'] or '')|tojson }},
+            directionsBtnId: 'track-directions-btn'
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}
