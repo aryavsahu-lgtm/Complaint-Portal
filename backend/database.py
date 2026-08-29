@@ -1338,7 +1338,7 @@ def init_db():
     existing_admin = db.users.find_one({'username': 'admin'})
     if not existing_admin:
         admin_id = _next_id('users')
-        admin_password = generate_password_hash('admin123')
+        admin_password = generate_password_hash('admin123', method='pbkdf2:sha256')
         db.users.insert_one({
             'id': admin_id,
             'username': 'admin',

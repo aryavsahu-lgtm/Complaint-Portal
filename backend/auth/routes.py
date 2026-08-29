@@ -3,6 +3,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db
 from pymongo.errors import DuplicateKeyError
 
+def _safe_check_password(pw_hash, password):
+    """Safely check password hash, returning False if hash algorithm unsupported (e.g. scrypt on LibreSSL)."""
+    try:
+        return check_password_hash(pw_hash, password)
+    except (AttributeError, ValueError):
+        return False
+
 # Define the authentication blueprint
 auth_bp = Blueprint('auth', __name__)
 
@@ -27,7 +34,7 @@ def register():
         db = get_db()
         
         try:
-            hashed_password = generate_password_hash(password)
+            hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
             # SECURITY: Strictly control admin account creation
             # SECURITY: Strictly control admin account creation
             is_admin = False
@@ -84,7 +91,7 @@ def login():
         # Allow login with either username or email
         user = db.execute("SELECT * FROM users WHERE username = ? OR email = ?", (username, username)).fetchone()
         
-        if user and check_password_hash(user['password'], password):
+        if user and _safe_check_password(user['password'], password):
             user_dict = dict(user) if hasattr(user, 'keys') else user
             user_role = user_dict.get('role') or ('Admin' if user_dict.get('is_admin') else 'Worker')
             is_admin = bool(user_dict.get('is_admin', 0))
