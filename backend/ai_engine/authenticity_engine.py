@@ -1,8 +1,15 @@
 import os
 from PIL import Image
 from PIL.ExifTags import TAGS, GPSTAGS
-import cv2
-import numpy as np
+try:
+    import cv2
+except Exception:
+    cv2 = None
+
+try:
+    import numpy as np
+except Exception:
+    np = None
 
 class AuthenticityEngine:
     """
