@@ -34,10 +34,24 @@ def _get_sqlite_connection():
     """Get or create a local SQLite connection for offline/dev use."""
     global _sqlite_conn
     if _sqlite_conn is None:
-        db_path = os.path.join(_BASE_DIR, 'complaints.db')
+        if os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or not os.access(_BASE_DIR, os.W_OK):
+            tmp_db = '/tmp/complaints.db'
+            src_db = os.path.join(_BASE_DIR, 'complaints.db')
+            if not os.path.exists(tmp_db) and os.path.exists(src_db):
+                import shutil
+                try:
+                    shutil.copyfile(src_db, tmp_db)
+                except Exception as e:
+                    logger.warning(f"Could not copy seed DB to /tmp: {e}")
+            db_path = tmp_db
+        else:
+            db_path = os.path.join(_BASE_DIR, 'complaints.db')
         _sqlite_conn = sqlite3.connect(db_path, check_same_thread=False)
         _sqlite_conn.row_factory = sqlite3.Row
-        _sqlite_conn.execute("PRAGMA foreign_keys = ON")
+        try:
+            _sqlite_conn.execute("PRAGMA foreign_keys = ON")
+        except Exception:
+            pass
     return _sqlite_conn
 
 
