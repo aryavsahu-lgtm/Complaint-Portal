@@ -1026,11 +1026,59 @@ def init_db():
         logger.warning(f"MongoDB unavailable; using SQLite fallback for initialization: {e}")
         conn = _get_sqlite_connection()
         conn.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, email TEXT UNIQUE, password TEXT, is_admin INTEGER DEFAULT 0, tracking_consent INTEGER DEFAULT 0, role TEXT DEFAULT 'Citizen', subsidiary TEXT DEFAULT 'SECL', created_at TEXT, updated_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS complaints (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, category TEXT, description TEXT, status TEXT DEFAULT 'Pending', priority TEXT DEFAULT 'Low', assigned_to TEXT DEFAULT 'General Administration', city TEXT DEFAULT 'Raipur', sentiment_score REAL DEFAULT 0.5, is_escalated INTEGER DEFAULT 0, is_authentic INTEGER DEFAULT 1, location TEXT, latitude FLOAT, longitude FLOAT, google_place_id TEXT, created_at TEXT, updated_at TEXT)")
+        conn.execute("""CREATE TABLE IF NOT EXISTS complaints (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            title TEXT DEFAULT '',
+            category TEXT,
+            description TEXT,
+            status TEXT DEFAULT 'Pending',
+            priority TEXT DEFAULT 'Low',
+            assigned_to TEXT DEFAULT 'General Administration',
+            city TEXT DEFAULT 'Raipur',
+            sentiment_score REAL DEFAULT 0.5,
+            is_escalated INTEGER DEFAULT 0,
+            is_authentic INTEGER DEFAULT 1,
+            location TEXT,
+            latitude FLOAT,
+            longitude FLOAT,
+            user_latitude FLOAT,
+            user_longitude FLOAT,
+            evidence_latitude FLOAT,
+            evidence_longitude FLOAT,
+            google_place_id TEXT,
+            emotion_data TEXT,
+            vision_data TEXT,
+            authenticity_data TEXT,
+            source TEXT,
+            rating REAL,
+            ref_no TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        )""")
         conn.execute("CREATE TABLE IF NOT EXISTS workers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, skill TEXT, current_load INTEGER DEFAULT 0, avg_resolution_time REAL DEFAULT 0.0, performance_rating REAL DEFAULT 5.0, is_active INTEGER DEFAULT 1, created_at TEXT, updated_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, message TEXT, is_read INTEGER DEFAULT 0, created_at TEXT, updated_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, message TEXT, created_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS chat_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT UNIQUE, current_state TEXT DEFAULT 'idle', created_at TEXT, updated_at TEXT)")
+        conn.execute("CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, message TEXT, is_read INTEGER DEFAULT 0, created_at TEXT, updated_at TEXT)")
+        conn.execute("""CREATE TABLE IF NOT EXISTS chat_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            user_id INTEGER,
+            role TEXT,
+            message TEXT,
+            response TEXT,
+            intent TEXT DEFAULT 'general',
+            emotion TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS chat_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT UNIQUE,
+            user_id INTEGER,
+            current_state TEXT DEFAULT 'idle',
+            created_at TEXT,
+            updated_at TEXT
+        )""")
+        conn.execute("CREATE TABLE IF NOT EXISTS audit_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT, details TEXT, created_at TEXT)")
+        conn.execute("CREATE TABLE IF NOT EXISTS user_locations (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, latitude REAL, longitude REAL, address TEXT, created_at TEXT)")
         # Seed Essential Demo Accounts if not present
         demo_accounts = [
             ('admin', 'admin@mineguard.gov.in', 'admin123', 1, 'Admin', 'Coal India HQ'),
