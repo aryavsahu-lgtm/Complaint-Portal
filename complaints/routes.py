@@ -48,6 +48,105 @@ def services():
     ]
     return render_template('services.html', services=municipal_services)
 
+
+@complaints_bp.route('/noticeboard')
+def noticeboard():
+    """Noticeboard & Acknowledgements page with DGMS circulars, notices, and system acknowledgements."""
+    notices = [
+        {
+            'id': 'NB-2026-001',
+            'badge': 'DGMS Mandatory',
+            'badge_color': 'danger',
+            'icon': 'bi-exclamation-triangle-fill',
+            'date': '20 Feb 2026',
+            'title': 'CMR 2017 Reg 144: Mandatory Continuous CO & Spontaneous Heating Monitoring',
+            'body': 'All colliery managers are directed to ensure daily tube bundle gas chromatography '
+                    'and handheld sensor scanning across all underground Degree-II and Degree-III seams '
+                    'in compliance with Coal Mines Regulation 2017, Regulation 144.',
+            'reference': 'DGMS/CMR/2026/144',
+            'status': 'Active'
+        },
+        {
+            'id': 'NB-2026-002',
+            'badge': 'MoEF&CC Clearance',
+            'badge_color': 'success',
+            'icon': 'bi-tree-fill',
+            'date': '15 Jan 2026',
+            'title': 'Half-Yearly Environmental Compliance Statement Submission Deadline',
+            'body': 'All mine operators holding Environmental Clearances must upload verified air/water '
+                    'quality test certificates, ground water monitoring reports, and green-belt '
+                    'afforestation progress reports before the quarterly deadline.',
+            'reference': 'MoEFCC/EC/Q1/2026',
+            'status': 'Active'
+        },
+        {
+            'id': 'NB-2026-003',
+            'badge': 'Labour Safety',
+            'badge_color': 'warning',
+            'icon': 'bi-person-badge-fill',
+            'date': '10 Jan 2026',
+            'title': 'Mines Rules 1955: 100% Form O PME Health Screenings for Contract Workers',
+            'body': 'Ensure all contractual overburden truck operators, drillers and blasters '
+                    'complete triennial periodic medical examinations (Form O) and Vocational Safety '
+                    'Training (VTC) before deployment on active mining faces.',
+            'reference': 'DGMSLab/MR1955/PME/2026',
+            'status': 'Active'
+        },
+        {
+            'id': 'NB-2025-014',
+            'badge': 'Mine Safety',
+            'badge_color': 'primary',
+            'icon': 'bi-shield-fill-check',
+            'date': '28 Nov 2025',
+            'title': 'Implementation of SCAMP Strata Support Plan across all Underground Seams',
+            'body': 'All mine managers are directed to submit updated Strata Control Action and Management '
+                    'Plans (SCAMP) for each active underground face within 30 days. Non-compliance will '
+                    'attract action under Section 22 of the Mines Act 1952.',
+            'reference': 'DGMS/SCAMP/2025/022',
+            'status': 'Acknowledged'
+        },
+        {
+            'id': 'NB-2025-009',
+            'badge': 'Digital India',
+            'badge_color': 'info',
+            'icon': 'bi-pc-display-horizontal',
+            'date': '05 Sep 2025',
+            'title': 'MineGuard Portal Launched — Digital Complaint & Compliance Management System',
+            'body': 'The Ministry of Coal, in association with DGMS and NIC, has officially launched the '
+                    'MineGuard AI-enabled compliance and complaint management portal. All subsidiaries of '
+                    'Coal India Limited are required to onboard by Q4 2025.',
+            'reference': 'MoC/DIG/MineGuard/2025',
+            'status': 'Acknowledged'
+        },
+    ]
+    acknowledgements = [
+        {
+            'icon': 'bi-flag-fill',
+            'color': 'text-saffron',
+            'title': 'Government of India',
+            'body': 'Ministry of Coal & Directorate General of Mines Safety (DGMS)'
+        },
+        {
+            'icon': 'bi-pc-display-horizontal',
+            'color': 'text-primary',
+            'title': 'National Informatics Centre (NIC)',
+            'body': 'Platform design, cloud hosting & Digital India integration'
+        },
+        {
+            'icon': 'bi-tree',
+            'color': 'text-success',
+            'title': 'MoEF&CC',
+            'body': 'Ministry of Environment, Forest and Climate Change — Environmental Compliance Framework'
+        },
+        {
+            'icon': 'bi-people-fill',
+            'color': 'text-warning',
+            'title': 'Coal India Limited (CIL) & Subsidiaries',
+            'body': 'SECL, CCL, WCL, ECL, NCL, BCCL, MCL, NEC — Field operations and compliance data'
+        },
+    ]
+    return render_template('noticeboard.html', notices=notices, acknowledgements=acknowledgements)
+
 @complaints_bp.route('/track', methods=['GET', 'POST'])
 def track_complaint():
     complaint = None
@@ -293,29 +392,29 @@ def admin_dashboard():
     
     for row in rows:
         c = dict(row)
-        c['description'] = decrypt_data(c['description'])
-        c['latitude'] = decrypt_data(c['latitude']) or 0
-        c['longitude'] = decrypt_data(c['longitude']) or 0
-        c['user_lat'] = decrypt_data(c['user_latitude']) or 0
-        c['user_lon'] = decrypt_data(c['user_longitude']) or 0
-        c['evidence_lat'] = decrypt_data(c['evidence_latitude']) or 0
-        c['evidence_lon'] = decrypt_data(c['evidence_longitude']) or 0
+        c['description'] = decrypt_data(c.get('description')) or ''
+        c['latitude'] = decrypt_data(c.get('latitude')) or 0
+        c['longitude'] = decrypt_data(c.get('longitude')) or 0
+        c['user_lat'] = decrypt_data(c.get('user_latitude')) or 0
+        c['user_lon'] = decrypt_data(c.get('user_longitude')) or 0
+        c['evidence_lat'] = decrypt_data(c.get('evidence_latitude')) or 0
+        c['evidence_lon'] = decrypt_data(c.get('evidence_longitude')) or 0
         c['google_place_id'] = decrypt_data(c.get('google_place_id')) or ''
         try:
             c['latitude'] = float(c['latitude']) if c['latitude'] else None
             c['longitude'] = float(c['longitude']) if c['longitude'] else None
-        except: pass
+        except Exception:
+            pass
         
         if c.get('emotion_data'):
             try:
                 emotions = json.loads(c['emotion_data'])
                 c['emotions'] = emotions
                 for k, v in emotions.items():
-                    # Map common keys if they differ
                     key_map = {"Anger": "Anger", "Fear": "Fear", "Urgency": "Urgency", "Distress": "Distress"}
                     if k in key_map:
                         emotion_totals[key_map[k]] += v
-            except:
+            except Exception:
                 c['emotions'] = {}
         else:
             c['emotions'] = {}
@@ -323,7 +422,7 @@ def admin_dashboard():
         if c.get('vision_data'):
             try:
                 c['vision_results'] = json.loads(c['vision_data'])
-            except:
+            except Exception:
                 c['vision_results'] = []
         else:
             c['vision_results'] = []
@@ -331,30 +430,44 @@ def admin_dashboard():
         if c.get('authenticity_data'):
             try:
                 c['authenticity'] = json.loads(c['authenticity_data'])
-            except:
+            except Exception:
                 c['authenticity'] = {}
         else:
             c['authenticity'] = {}
 
         complaints.append(c)
         stats['total'] += 1
-        s_key = c['status'].lower().replace(' ', '_')
+        status_val = c.get('status') or 'Pending'
+        s_key = status_val.lower().replace(' ', '_')
         stats[s_key] = stats.get(s_key, 0) + 1
-        category_counts[c['category']] = category_counts.get(c['category'], 0) + 1
-        status_counts[c['status']] = status_counts.get(c['status'], 0) + 1
+        cat_val = c.get('category') or 'General'
+        category_counts[cat_val] = category_counts.get(cat_val, 0) + 1
+        status_counts[status_val] = status_counts.get(status_val, 0) + 1
 
-    technicians = [dict(w) for w in db.execute("SELECT * FROM workers WHERE is_active = 1").fetchall()]
+    try:
+        technicians = [dict(w) for w in db.execute("SELECT * FROM workers WHERE is_active = 1").fetchall()]
+    except Exception:
+        technicians = []
     
     # Trends
-    trends = db.execute("SELECT date(created_at) as day, COUNT(*) as count FROM complaints GROUP BY day ORDER BY day DESC LIMIT 7").fetchall()
-    resolution_trends = [dict(t) for t in trends]
+    try:
+        trends = db.execute("SELECT date(created_at) as day, COUNT(*) as count FROM complaints GROUP BY day ORDER BY day DESC LIMIT 7").fetchall()
+        resolution_trends = [dict(t) for t in trends]
+    except Exception:
+        resolution_trends = []
 
     # Metrics
-    total_chats_row = db.execute("SELECT COUNT(DISTINCT session_id) as count FROM chat_history").fetchone()
-    total_chats = total_chats_row['count'] if total_chats_row and total_chats_row['count'] > 0 else 1
+    try:
+        total_chats_row = db.execute("SELECT COUNT(DISTINCT session_id) as count FROM chat_history").fetchone()
+        total_chats = total_chats_row['count'] if total_chats_row and total_chats_row['count'] > 0 else 1
+    except Exception:
+        total_chats = 1
     
-    escalated_chats_row = db.execute("SELECT COUNT(DISTINCT session_id) as count FROM chat_history WHERE intent = 'emergency'").fetchone()
-    escalated_chats = escalated_chats_row['count'] if escalated_chats_row else 0
+    try:
+        escalated_chats_row = db.execute("SELECT COUNT(DISTINCT session_id) as count FROM chat_history WHERE intent = 'emergency'").fetchone()
+        escalated_chats = escalated_chats_row['count'] if escalated_chats_row else 0
+    except Exception:
+        escalated_chats = 0
     
     # Mock some metrics for now if not in DB to avoid UndefinedError
     chat_metrics = {

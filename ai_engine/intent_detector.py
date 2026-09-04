@@ -10,6 +10,7 @@ Supported Intents:
 - general_inquiry: Questions about the system
 """
 
+import os
 import re
 import json
 from collections import Counter
@@ -26,10 +27,25 @@ try:
     import nltk
     from nltk.tokenize import word_tokenize
     from nltk.corpus import stopwords
-    nltk.download('punkt', quiet=True)
-    nltk.download('stopwords', quiet=True)
+    nltk_data_dir = '/tmp/nltk_data' if (os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME')) else os.path.expanduser('~/nltk_data')
+    if nltk_data_dir not in nltk.data.path:
+        nltk.data.path.append(nltk_data_dir)
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except (LookupError, OSError):
+        try:
+            nltk.download('punkt', download_dir=nltk_data_dir, quiet=True)
+        except Exception:
+            pass
+    try:
+        nltk.data.find('corpora/stopwords')
+    except (LookupError, OSError):
+        try:
+            nltk.download('stopwords', download_dir=nltk_data_dir, quiet=True)
+        except Exception:
+            pass
     NLTK_AVAILABLE = True
-except (ImportError, LookupError):
+except Exception:
     NLTK_AVAILABLE = False
 
 

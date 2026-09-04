@@ -71,10 +71,26 @@ def inject_global_template_vars():
         'google_maps_api_key': os.getenv('GOOGLE_MAPS_API_KEY', '')
     }
 
-app.config['DATABASE'] = os.path.join(_BASE_DIR, 'complaints.db')
-app.config['STORAGE_FOLDER'] = os.path.join(_BASE_DIR, 'storage')
-app.config['UPLOAD_FOLDER'] = os.path.join(_FRONTEND_DIR, 'static', 'uploads')
-app.config['AUDIO_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'audio')
+# Safe configuration for local and serverless read-only environments
+is_serverless = bool(os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or not os.access(_BASE_DIR, os.W_OK))
+if is_serverless:
+    _TMP = '/tmp'
+    app.config['DATABASE'] = os.path.join(_TMP, 'complaints.db')
+    app.config['STORAGE_FOLDER'] = os.path.join(_TMP, 'storage')
+    app.config['UPLOAD_FOLDER'] = os.path.join(_TMP, 'uploads')
+    app.config['AUDIO_FOLDER'] = os.path.join(_TMP, 'uploads', 'audio')
+    try:
+        os.makedirs(app.config['STORAGE_FOLDER'], exist_ok=True)
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        os.makedirs(app.config['AUDIO_FOLDER'], exist_ok=True)
+    except Exception:
+        pass
+else:
+    app.config['DATABASE'] = os.path.join(_BASE_DIR, 'complaints.db')
+    app.config['STORAGE_FOLDER'] = os.path.join(_BASE_DIR, 'storage')
+    app.config['UPLOAD_FOLDER'] = os.path.join(_FRONTEND_DIR, 'static', 'uploads')
+    app.config['AUDIO_FOLDER'] = os.path.join(app.config['UPLOAD_FOLDER'], 'audio')
+
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-limit
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0

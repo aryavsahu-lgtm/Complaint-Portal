@@ -28,16 +28,30 @@ _mongo_client = None
 _mongo_db = None
 _sqlite_conn = None
 _mongo_connection_failed = False
-
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def _get_sqlite_connection():
     """Get or create a local SQLite connection for offline/dev use."""
     global _sqlite_conn
     if _sqlite_conn is None:
-        db_path = os.path.join(os.getcwd(), 'complaints.db')
+        if os.environ.get('VERCEL') or os.environ.get('AWS_LAMBDA_FUNCTION_NAME') or not os.access(_BASE_DIR, os.W_OK):
+            tmp_db = '/tmp/complaints.db'
+            src_db = os.path.join(_BASE_DIR, 'complaints.db')
+            if not os.path.exists(tmp_db) and os.path.exists(src_db):
+                import shutil
+                try:
+                    shutil.copyfile(src_db, tmp_db)
+                except Exception as e:
+                    logger.warning(f"Could not copy seed DB to /tmp: {e}")
+            db_path = tmp_db
+        else:
+            db_path = os.path.join(_BASE_DIR, 'complaints.db')
         _sqlite_conn = sqlite3.connect(db_path, check_same_thread=False)
         _sqlite_conn.row_factory = sqlite3.Row
-        _sqlite_conn.execute("PRAGMA foreign_keys = ON")
+        try:
+            _sqlite_conn.execute("PRAGMA foreign_keys = ON")
+        except Exception:
+            pass
     return _sqlite_conn
 
 
@@ -78,68 +92,51 @@ def _get_mongo_connection():
         logger.info("No MONGO_URI configured; using SQLite fallback immediately.")
         raise ConnectionError("MONGO_URI not configured")
 
-    use_sqlite_fallback = os.getenv('MONGO_USE_SQLITE_FALLBACK', 'true').lower() in {'1','true','yes','on'}
+    use_sqlite_fallback = os.getenv('MONGO_USE_SQLITE_FALLBACK', 'false').lower() in {'1','true','yes','on'}
     if use_sqlite_fallback:
         _mongo_connection_failed = True
-        logger.info("Local/dev fallback enabled; using SQLite immediately.")
+        logger.info("Local/dev SQLite fallback enabled in .env.")
         raise ConnectionError("SQLite fallback enabled")
     
-    timeout_ms = int(os.getenv('MONGO_TIMEOUT_MS', '1000'))
+    timeout_ms = int(os.getenv('MONGO_TIMEOUT_MS', '3000'))
 
-    # Use a single fast MongoDB attempt in local/dev mode.
-    attempts = []
-    
-    # 1. Standard Atlas connection
-    attempts.append(("Standard Atlas", {
-        'serverSelectionTimeoutMS': timeout_ms,
-        'connectTimeoutMS': timeout_ms,
-        'tlsCAFile': certifi.where()
-    }))
-    
-    # 2. Direct Shard fallback (Bypasses SRV/DNS issues common on macOS)
-    if '4l7kqvq' in mongo_uri:
-        shards = "ac-vl4v8yi-shard-00-00.4l7kqvq.mongodb.net:27017,ac-vl4v8yi-shard-00-01.4l7kqvq.mongodb.net:27017,ac-vl4v8yi-shard-00-02.4l7kqvq.mongodb.net:27017"
-        direct_uri = f"mongodb://Admin:Admin123@{shards}/{db_name}?ssl=true&authSource=admin&replicaSet=atlas-vl4v8yi-shard-0"
-        attempts.append(("Direct Shard (Bypass SRV)", {
+    # Connection attempts
+    attempts = [
+        ("Standard Atlas (TLS with Certifi)", {
             'serverSelectionTimeoutMS': timeout_ms,
             'connectTimeoutMS': timeout_ms,
-            'tlsAllowInvalidCertificates': True,
-            'uri_override': direct_uri
-        }))
-    
-    # 3. Aggressive Insecure fallback
-    attempts.append(("Aggressive Insecure", {
-        'serverSelectionTimeoutMS': timeout_ms,
-        'connectTimeoutMS': timeout_ms,
-        'tls': True,
-        'tlsAllowInvalidCertificates': True,
-        'tlsAllowInvalidHostnames': True,
-        'connect': True
-    }))
+            'tlsCAFile': certifi.where()
+        }),
+        ("Standard Atlas (System TLS)", {
+            'serverSelectionTimeoutMS': timeout_ms,
+            'connectTimeoutMS': timeout_ms,
+            'tls': True,
+            'tlsAllowInvalidCertificates': True
+        })
+    ]
 
     last_error = None
     for name, args in attempts:
         try:
-            current_uri = args.pop('uri_override', mongo_uri)
             logger.info(f"Attempting MongoDB connection: {name}")
-            
-            _mongo_client = MongoClient(current_uri, **args)
+            _mongo_client = MongoClient(mongo_uri, **args)
             _mongo_client.admin.command('ping')
             _mongo_db = _mongo_client[db_name]
             logger.info(f"✅ Connected to MongoDB database: {db_name} ({name})")
             return _mongo_db
         except Exception as e:
             msg = str(e)
-            if "TLSV1_ALERT_INTERNAL_ERROR" in msg:
-                logger.error(f"🚨 ALERT: MongoDB Atlas sent an 'Internal Error'. This ALMOST ALWAYS means your cluster is PAUSED or your IP is NOT whitelisted.")
-                logger.error(f"👉 Please go to https://cloud.mongodb.com and ensure your cluster is 'Active' and your IP is in 'Network Access'.")
-            
             logger.warning(f"❌ {name} failed: {e}")
             last_error = e
+            # If credentials are wrong, no need to retry with different TLS configs
+            if "authentication failed" in msg.lower() or "bad auth" in msg.lower() or "auth failed" in msg.lower():
+                logger.error("🚨 MongoDB Authentication Error: The username or password in MONGO_URI does not match your MongoDB Atlas Database User.")
+                logger.error("👉 Please verify Database Access in MongoDB Atlas: https://cloud.mongodb.com")
+                break
             continue
             
     _mongo_connection_failed = True
-    logger.error(f"❌ All connection strategies failed. Last error: {last_error}")
+    logger.error(f"❌ MongoDB connection failed: {last_error}")
     raise last_error
 
 
@@ -1029,25 +1026,80 @@ def init_db():
         logger.warning(f"MongoDB unavailable; using SQLite fallback for initialization: {e}")
         conn = _get_sqlite_connection()
         conn.execute("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, email TEXT UNIQUE, password TEXT, is_admin INTEGER DEFAULT 0, tracking_consent INTEGER DEFAULT 0, role TEXT DEFAULT 'Citizen', subsidiary TEXT DEFAULT 'SECL', created_at TEXT, updated_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS complaints (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, category TEXT, description TEXT, status TEXT DEFAULT 'Pending', priority TEXT DEFAULT 'Low', assigned_to TEXT DEFAULT 'General Administration', city TEXT DEFAULT 'Raipur', sentiment_score REAL DEFAULT 0.5, is_escalated INTEGER DEFAULT 0, is_authentic INTEGER DEFAULT 1, location TEXT, latitude FLOAT, longitude FLOAT, google_place_id TEXT, created_at TEXT, updated_at TEXT)")
+        conn.execute("""CREATE TABLE IF NOT EXISTS complaints (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            title TEXT DEFAULT '',
+            category TEXT,
+            description TEXT,
+            status TEXT DEFAULT 'Pending',
+            priority TEXT DEFAULT 'Low',
+            assigned_to TEXT DEFAULT 'General Administration',
+            city TEXT DEFAULT 'Raipur',
+            sentiment_score REAL DEFAULT 0.5,
+            is_escalated INTEGER DEFAULT 0,
+            is_authentic INTEGER DEFAULT 1,
+            location TEXT,
+            latitude FLOAT,
+            longitude FLOAT,
+            user_latitude FLOAT,
+            user_longitude FLOAT,
+            evidence_latitude FLOAT,
+            evidence_longitude FLOAT,
+            google_place_id TEXT,
+            emotion_data TEXT,
+            vision_data TEXT,
+            authenticity_data TEXT,
+            source TEXT,
+            rating REAL,
+            ref_no TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        )""")
         conn.execute("CREATE TABLE IF NOT EXISTS workers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, skill TEXT, current_load INTEGER DEFAULT 0, avg_resolution_time REAL DEFAULT 0.0, performance_rating REAL DEFAULT 5.0, is_active INTEGER DEFAULT 1, created_at TEXT, updated_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, message TEXT, is_read INTEGER DEFAULT 0, created_at TEXT, updated_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, message TEXT, created_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS chat_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT UNIQUE, current_state TEXT DEFAULT 'idle', created_at TEXT, updated_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS audit_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, action TEXT, details TEXT, created_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS user_locations (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, latitude REAL, longitude REAL, address TEXT, created_at TEXT)")
-
-        # Verify essential columns on complaints table
-        try:
-            cur = conn.cursor()
-            cur.execute("PRAGMA table_info(complaints)")
-            existing_cols = [r[1] for r in cur.fetchall()]
-            for col, col_type in [("google_place_id", "TEXT"), ("latitude", "FLOAT"), ("longitude", "FLOAT"), ("location", "TEXT")]:
-                if col not in existing_cols:
-                    cur.execute(f"ALTER TABLE complaints ADD COLUMN {col} {col_type}")
-            conn.commit()
-        except Exception as col_err:
-            logger.debug(f"Auto-column check: {col_err}")
+        conn.execute("CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, message TEXT, is_read INTEGER DEFAULT 0, created_at TEXT, updated_at TEXT)")
+        conn.execute("""CREATE TABLE IF NOT EXISTS chat_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            user_id INTEGER,
+            role TEXT,
+            message TEXT,
+            response TEXT,
+            intent TEXT DEFAULT 'general',
+            emotion TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS chat_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT UNIQUE,
+            user_id INTEGER,
+            current_state TEXT DEFAULT 'idle',
+            created_at TEXT,
+            updated_at TEXT
+        )""")
+        conn.execute("CREATE TABLE IF NOT EXISTS audit_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, action TEXT, details TEXT, created_at TEXT)")
+        conn.execute("CREATE TABLE IF NOT EXISTS user_locations (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER, latitude REAL, longitude REAL, address TEXT, created_at TEXT)")
+        # Seed Essential Demo Accounts if not present
+        demo_accounts = [
+            ('admin', 'admin@mineguard.gov.in', 'admin123', 1, 'Admin', 'Coal India HQ'),
+            ('manager', 'manager@mineguard.gov.in', 'manager123', 1, 'Mine Manager', 'SECL'),
+            ('safety', 'safety@mineguard.gov.in', 'safety123', 1, 'Safety Officer', 'SECL'),
+            ('inspector', 'inspector@dgms.gov.in', 'inspector123', 1, 'Inspector', 'DGMS'),
+            ('worker', 'worker@mineguard.gov.in', 'worker123', 0, 'Worker', 'SECL'),
+        ]
+        now_dt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        for uname, uemail, upass, is_adm, urole, usub in demo_accounts:
+            try:
+                cur = conn.cursor()
+                cur.execute("SELECT id FROM users WHERE username = ? OR email = ?", (uname, uemail))
+                if not cur.fetchone():
+                    hashed_pw = generate_password_hash(upass, method='pbkdf2:sha256')
+                    cur.execute("""INSERT INTO users (username, email, password, is_admin, tracking_consent, role, subsidiary, created_at, updated_at)
+                                   VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)""",
+                                (uname, uemail, hashed_pw, is_adm, urole, usub, now_dt, now_dt))
+            except Exception as user_seed_err:
+                logger.warning(f"Could not seed demo user {uname}: {user_seed_err}")
+        conn.commit()
 
         # Coal Mining Governance & Compliance Platform Core Tables
         conn.execute("""CREATE TABLE IF NOT EXISTS mines (
@@ -1351,21 +1403,31 @@ def init_db():
 
     logger.info("✅ Database indexes setup complete.")
     
-    # Seed admin user
-    existing_admin = db.users.find_one({'username': 'admin'})
-    if not existing_admin:
-        admin_id = _next_id('users')
-        admin_password = generate_password_hash('admin123')
-        db.users.insert_one({
-            'id': admin_id,
-            'username': 'admin',
-            'email': 'admin@complaint.com',
-            'password': admin_password,
-            'is_admin': True,
-            'tracking_consent': False,
-            'created_at': datetime.now()
-        })
-        logger.info("✅ Default admin user created")
+    # Seed default demo users
+    demo_accounts = [
+        ('admin', 'admin@mineguard.gov.in', 'admin123', True, 'Admin', 'Coal India HQ'),
+        ('manager', 'manager@mineguard.gov.in', 'manager123', True, 'Mine Manager', 'SECL'),
+        ('safety', 'safety@mineguard.gov.in', 'safety123', True, 'Safety Officer', 'SECL'),
+        ('inspector', 'inspector@dgms.gov.in', 'inspector123', True, 'Inspector', 'DGMS'),
+        ('worker', 'worker@mineguard.gov.in', 'worker123', False, 'Worker', 'SECL'),
+    ]
+    for uname, uemail, upass, is_adm, urole, usub in demo_accounts:
+        existing_user = db.users.find_one({'$or': [{'username': uname}, {'email': uemail}]})
+        if not existing_user:
+            u_id = _next_id('users')
+            u_pw = generate_password_hash(upass, method='pbkdf2:sha256')
+            db.users.insert_one({
+                'id': u_id,
+                'username': uname,
+                'email': uemail,
+                'password': u_pw,
+                'is_admin': is_adm,
+                'role': urole,
+                'subsidiary': usub,
+                'tracking_consent': False,
+                'created_at': datetime.now()
+            })
+            logger.info(f"✅ Demo user {uname} ({urole}) created")
     
     # Seed workers
     if db.workers.count_documents({}) == 0:

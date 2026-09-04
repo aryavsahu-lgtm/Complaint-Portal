@@ -1,16 +1,5 @@
-import os
 import random
 from deep_translator import GoogleTranslator
-
-try:
-    import google.generativeai as genai
-    GENAI_AVAILABLE = True
-    # Configure it if key is available
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if api_key:
-        genai.configure(api_key=api_key)
-except ImportError:
-    GENAI_AVAILABLE = False
 
 class ResponseGenerator:
     """
@@ -21,11 +10,15 @@ class ResponseGenerator:
     def __init__(self, lang='en'):
         self.lang = lang
         self.translator = None
-        if lang == 'hi':
-            self.translator = GoogleTranslator(source='en', target='hi')
+        if lang and lang != 'en':
+            try:
+                self.translator = GoogleTranslator(source='en', target=lang)
+            except Exception as e:
+                print(f"[ResponseGen] Could not initialize translator for {lang}: {e}")
+                self.translator = None
 
     def _tr(self, text):
-        """Translates text if language is set to Hindi."""
+        """Translates text if language is set to a non-English language."""
         if self.translator and text:
             try:
                 return self.translator.translate(text)
@@ -201,42 +194,6 @@ class ResponseGenerator:
 
     def _get_random_state(self, state):
         return random.choice(self.STATE_INSTRUCTIONS.get(state, ["How may I assist you with your municipal requirements?"]))
-
-    def generate_dynamic_response(self, user_message, context_data):
-        """
-        Uses Gemini LLM to generate a dynamic, contextual response to general inquiries.
-        Falls back to template if LLM is unavailable.
-        """
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not GENAI_AVAILABLE or not api_key:
-            return self._tr(self._get_random('help'))
-
-        try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            
-            # Build System Prompt
-            system_prompt = (
-                "You are the official AI Safety & Compliance Assistant for the Smart Coal Mining Governance Portal. "
-                "Your role is to assist users with filing complaints, safety reports, and answering general questions about the portal. "
-                "Keep your answers concise, professional, and helpful. "
-            )
-            
-            if context_data and context_data.get('user_name'):
-                system_prompt += f"You are currently talking to {context_data.get('user_name')}. "
-                if context_data.get('user_role'):
-                    system_prompt += f"Their role is {context_data.get('user_role')}. "
-                    
-            if context_data and context_data.get('language') == 'hi':
-                system_prompt += "Please reply in Hindi (written in Devanagari script). "
-            
-            prompt = f"System Rules:\n{system_prompt}\n\nUser Question:\n{user_message}"
-            
-            response = model.generate_content(prompt)
-            return response.text.strip()
-            
-        except Exception as e:
-            print(f"[Generative AI] Error generating dynamic response: {e}")
-            return self._tr(self._get_random('fallback'))
 
     def get_confirmation_summary(self, draft):
         """Generates the formal summary for confirmation."""

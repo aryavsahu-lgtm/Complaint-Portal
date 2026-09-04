@@ -13,15 +13,10 @@
       }
     }
   ],
-  "functions": {
-    "api/index.py": {
-      "includeFiles": "frontend/**,backend/**,requirements.txt"
-    }
-  },
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "api/index.py"
+      "dest": "/api/index.py"
     }
   ]
 }
