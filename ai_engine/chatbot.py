@@ -115,6 +115,20 @@ class SmartChatbot:
             db.commit()
         except Exception as e:
             print(f"Error saving context: {e}")
+
+    def get_user_context(self):
+        """Fetch user details from DB to build context for LLM"""
+        context_data = {'language': self.lang}
+        if self.user_id:
+            try:
+                db = get_db()
+                row = db.execute("SELECT first_name, last_name, role FROM users WHERE id = ?", (self.user_id,)).fetchone()
+                if row:
+                    context_data['user_name'] = f"{row['first_name']} {row['last_name']}"
+                    context_data['user_role'] = row['role']
+            except Exception as e:
+                print(f"[Chatbot Context] Error: {e}")
+        return context_data
         
     def detect_intent(self, message):
         """Detect user intent using AI engine with bilingual support"""
@@ -289,7 +303,8 @@ class SmartChatbot:
                 # Don't require login here, let them explain the situation first
 
             elif intent == 'general_inquiry' or intent == 'help':
-                response['message'] = self.response_gen.generate('help', self.state)
+                user_context = self.get_user_context()
+                response['message'] = self.response_gen.generate_dynamic_response(user_message, user_context)
                 response['suggestions'] = ["Report Incident", "Upload Evidence", "Track Case Status", "Report Emergency", "Contact Support"]
                 
             elif intent == 'thanks':
@@ -304,7 +319,8 @@ class SmartChatbot:
                 if len(user_message.split()) > 5:
                     self.start_complaint_flow(user_message, response)
                 else:
-                    response['message'] = self.response_gen.generate('fallback', self.state)
+                    user_context = self.get_user_context()
+                    response['message'] = self.response_gen.generate_dynamic_response(user_message, user_context)
                     response['suggestions'] = ["File a complaint", "Check status"]
                 
         self.save_context()
@@ -479,34 +495,7 @@ class SmartChatbot:
             
         return response
 
-    def handle_location_input(self, message, response):
-        """Handle location input"""
-        # Clean up input if it comes from the 'Share Location' or GPS button
-        loc_msg = message.replace("My current location is:", "").replace("📍 Location Captured:", "").strip()
-        
-        # If the user just says "current location" without coordinates, try to prompt for text or use a placeholder
-        if loc_msg.lower() == "current location":
-            response['message'] = "Automated coordinate retrieval was unsuccessful. Please provide a manual street address or a recognizable landmark."
-            return response
 
-        self.context['draft']['location'] = loc_msg
-        
-        self.state = self.STATE_COLLECTING_MEDIA
-        response['message'] = f"Location officially verified: **{loc_msg}**\n\n" + self.response_gen.generate(None, self.state)
-        response['suggestions'] = ["Skip Documentation", "Attach Official Media"]
-        return response
-
-    def handle_media_input(self, message, attachment, response):
-        """Handle media attachment or skip"""
-        if attachment:
-            self.context['draft']['attachment'] = attachment
-        
-        self.state = self.STATE_CONFIRMING
-        draft = self.context['draft']
-        
-        response['message'] = self.response_gen.get_confirmation_summary(draft)
-        response['suggestions'] = ["Confirm & Submit", "Adjust Priority", "Modify Description", "Cancel Session"]
-        return response
 
     def handle_confirmation_input(self, message, response):
         """Handle the confirmation or editing options"""
@@ -757,5 +746,8 @@ class SmartChatbot:
         return response
 
     def get_complaint_details(self, complaint_id):
-        # ... (keep existing helper if needed, or remove if unused)
-        pass
+        db = get_db()
+        row = db.execute("SELECT * FROM complaints WHERE id = ?", (complaint_id,)).fetchone()
+        if row:
+            return dict(row)
+        return None

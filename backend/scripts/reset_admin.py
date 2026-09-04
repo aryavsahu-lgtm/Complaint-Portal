@@ -9,7 +9,7 @@ def reset_admin():
     cursor.execute("SELECT * FROM users WHERE username = 'admin'")
     admin = cursor.fetchone()
     
-    hashed_pw = generate_password_hash('admin123')
+    hashed_pw = generate_password_hash('admin123', method='pbkdf2:sha256')
     
     if admin:
         print("Admin exists. Updating password to 'admin123'...")

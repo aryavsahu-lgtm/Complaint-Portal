@@ -392,29 +392,29 @@ def admin_dashboard():
     
     for row in rows:
         c = dict(row)
-        c['description'] = decrypt_data(c['description'])
-        c['latitude'] = decrypt_data(c['latitude']) or 0
-        c['longitude'] = decrypt_data(c['longitude']) or 0
-        c['user_lat'] = decrypt_data(c['user_latitude']) or 0
-        c['user_lon'] = decrypt_data(c['user_longitude']) or 0
-        c['evidence_lat'] = decrypt_data(c['evidence_latitude']) or 0
-        c['evidence_lon'] = decrypt_data(c['evidence_longitude']) or 0
+        c['description'] = decrypt_data(c.get('description')) or ''
+        c['latitude'] = decrypt_data(c.get('latitude')) or 0
+        c['longitude'] = decrypt_data(c.get('longitude')) or 0
+        c['user_lat'] = decrypt_data(c.get('user_latitude')) or 0
+        c['user_lon'] = decrypt_data(c.get('user_longitude')) or 0
+        c['evidence_lat'] = decrypt_data(c.get('evidence_latitude')) or 0
+        c['evidence_lon'] = decrypt_data(c.get('evidence_longitude')) or 0
         c['google_place_id'] = decrypt_data(c.get('google_place_id')) or ''
         try:
             c['latitude'] = float(c['latitude']) if c['latitude'] else None
             c['longitude'] = float(c['longitude']) if c['longitude'] else None
-        except: pass
+        except Exception:
+            pass
         
         if c.get('emotion_data'):
             try:
                 emotions = json.loads(c['emotion_data'])
                 c['emotions'] = emotions
                 for k, v in emotions.items():
-                    # Map common keys if they differ
                     key_map = {"Anger": "Anger", "Fear": "Fear", "Urgency": "Urgency", "Distress": "Distress"}
                     if k in key_map:
                         emotion_totals[key_map[k]] += v
-            except:
+            except Exception:
                 c['emotions'] = {}
         else:
             c['emotions'] = {}
@@ -422,7 +422,7 @@ def admin_dashboard():
         if c.get('vision_data'):
             try:
                 c['vision_results'] = json.loads(c['vision_data'])
-            except:
+            except Exception:
                 c['vision_results'] = []
         else:
             c['vision_results'] = []
@@ -430,30 +430,44 @@ def admin_dashboard():
         if c.get('authenticity_data'):
             try:
                 c['authenticity'] = json.loads(c['authenticity_data'])
-            except:
+            except Exception:
                 c['authenticity'] = {}
         else:
             c['authenticity'] = {}
 
         complaints.append(c)
         stats['total'] += 1
-        s_key = c['status'].lower().replace(' ', '_')
+        status_val = c.get('status') or 'Pending'
+        s_key = status_val.lower().replace(' ', '_')
         stats[s_key] = stats.get(s_key, 0) + 1
-        category_counts[c['category']] = category_counts.get(c['category'], 0) + 1
-        status_counts[c['status']] = status_counts.get(c['status'], 0) + 1
+        cat_val = c.get('category') or 'General'
+        category_counts[cat_val] = category_counts.get(cat_val, 0) + 1
+        status_counts[status_val] = status_counts.get(status_val, 0) + 1
 
-    technicians = [dict(w) for w in db.execute("SELECT * FROM workers WHERE is_active = 1").fetchall()]
+    try:
+        technicians = [dict(w) for w in db.execute("SELECT * FROM workers WHERE is_active = 1").fetchall()]
+    except Exception:
+        technicians = []
     
     # Trends
-    trends = db.execute("SELECT date(created_at) as day, COUNT(*) as count FROM complaints GROUP BY day ORDER BY day DESC LIMIT 7").fetchall()
-    resolution_trends = [dict(t) for t in trends]
+    try:
+        trends = db.execute("SELECT date(created_at) as day, COUNT(*) as count FROM complaints GROUP BY day ORDER BY day DESC LIMIT 7").fetchall()
+        resolution_trends = [dict(t) for t in trends]
+    except Exception:
+        resolution_trends = []
 
     # Metrics
-    total_chats_row = db.execute("SELECT COUNT(DISTINCT session_id) as count FROM chat_history").fetchone()
-    total_chats = total_chats_row['count'] if total_chats_row and total_chats_row['count'] > 0 else 1
+    try:
+        total_chats_row = db.execute("SELECT COUNT(DISTINCT session_id) as count FROM chat_history").fetchone()
+        total_chats = total_chats_row['count'] if total_chats_row and total_chats_row['count'] > 0 else 1
+    except Exception:
+        total_chats = 1
     
-    escalated_chats_row = db.execute("SELECT COUNT(DISTINCT session_id) as count FROM chat_history WHERE intent = 'emergency'").fetchone()
-    escalated_chats = escalated_chats_row['count'] if escalated_chats_row else 0
+    try:
+        escalated_chats_row = db.execute("SELECT COUNT(DISTINCT session_id) as count FROM chat_history WHERE intent = 'emergency'").fetchone()
+        escalated_chats = escalated_chats_row['count'] if escalated_chats_row else 0
+    except Exception:
+        escalated_chats = 0
     
     # Mock some metrics for now if not in DB to avoid UndefinedError
     chat_metrics = {

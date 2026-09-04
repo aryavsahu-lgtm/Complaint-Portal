@@ -83,7 +83,9 @@ def submit_complaint_from_chat():
         return jsonify({'error': 'Complaint data is required'}), 400
     
     chatbot = SmartChatbot(user_id=session.get('user_id'), lang=session.get('lang', 'en'))
-    result = chatbot.submit_complaint(complaint_data)
+    chatbot.context['draft'] = complaint_data
+    response = {'message': '', 'action': None, 'data': {}, 'suggestions': []}
+    result = chatbot.submit_complaint(response)
     
     return jsonify(result)
 
