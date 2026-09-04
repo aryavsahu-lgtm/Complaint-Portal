@@ -21,15 +21,28 @@ from database import close_db, init_db
 from translations import TRANSLATIONS, SUPPORTED_LANGUAGES, LANGUAGE_MAP, get_translations
 from flask_socketio import SocketIO
 
-# Resolve the backend/ directory (where this file lives)
+# Resolve backend and frontend directories robustly across local and serverless environments
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Frontend assets live one level up, in the frontend/ sibling directory
-_FRONTEND_DIR = os.path.join(_BASE_DIR, '..', 'frontend')
+_possible_frontend_dirs = [
+    os.path.join(_BASE_DIR, '..', 'frontend'),
+    os.path.join(_BASE_DIR, 'frontend'),
+    os.path.join(os.getcwd(), 'frontend'),
+    '/var/task/frontend',
+    os.path.abspath('frontend'),
+]
+_FRONTEND_DIR = _possible_frontend_dirs[0]
+for _p in _possible_frontend_dirs:
+    if os.path.exists(os.path.join(_p, 'templates')):
+        _FRONTEND_DIR = os.path.abspath(_p)
+        break
+
+_TEMPLATE_DIR = os.path.join(_FRONTEND_DIR, 'templates')
+_STATIC_DIR = os.path.join(_FRONTEND_DIR, 'static')
 
 app = Flask(
     __name__,
-    template_folder=os.path.join(_FRONTEND_DIR, 'templates'),
-    static_folder=os.path.join(_FRONTEND_DIR, 'static')
+    template_folder=_TEMPLATE_DIR,
+    static_folder=_STATIC_DIR
 )
 app.secret_key = 'your-secret-key-change-this-in-production'
 # Use the threading async mode for compatibility with the Python 3.13 environment.
