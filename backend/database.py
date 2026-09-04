@@ -1031,20 +1031,27 @@ def init_db():
         conn.execute("CREATE TABLE IF NOT EXISTS notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, message TEXT, is_read INTEGER DEFAULT 0, created_at TEXT, updated_at TEXT)")
         conn.execute("CREATE TABLE IF NOT EXISTS chat_history (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT, role TEXT, message TEXT, created_at TEXT)")
         conn.execute("CREATE TABLE IF NOT EXISTS chat_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT UNIQUE, current_state TEXT DEFAULT 'idle', created_at TEXT, updated_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS audit_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, action TEXT, details TEXT, created_at TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS user_locations (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id TEXT, latitude REAL, longitude REAL, address TEXT, created_at TEXT)")
-
-        # Verify essential columns on complaints table
-        try:
-            cur = conn.cursor()
-            cur.execute("PRAGMA table_info(complaints)")
-            existing_cols = [r[1] for r in cur.fetchall()]
-            for col, col_type in [("google_place_id", "TEXT"), ("latitude", "FLOAT"), ("longitude", "FLOAT"), ("location", "TEXT")]:
-                if col not in existing_cols:
-                    cur.execute(f"ALTER TABLE complaints ADD COLUMN {col} {col_type}")
-            conn.commit()
-        except Exception as col_err:
-            logger.debug(f"Auto-column check: {col_err}")
+        # Seed Essential Demo Accounts if not present
+        demo_accounts = [
+            ('admin', 'admin@mineguard.gov.in', 'admin123', 1, 'Admin', 'Coal India HQ'),
+            ('manager', 'manager@mineguard.gov.in', 'manager123', 1, 'Mine Manager', 'SECL'),
+            ('safety', 'safety@mineguard.gov.in', 'safety123', 1, 'Safety Officer', 'SECL'),
+            ('inspector', 'inspector@dgms.gov.in', 'inspector123', 1, 'Inspector', 'DGMS'),
+            ('worker', 'worker@mineguard.gov.in', 'worker123', 0, 'Worker', 'SECL'),
+        ]
+        now_dt = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        for uname, uemail, upass, is_adm, urole, usub in demo_accounts:
+            try:
+                cur = conn.cursor()
+                cur.execute("SELECT id FROM users WHERE username = ? OR email = ?", (uname, uemail))
+                if not cur.fetchone():
+                    hashed_pw = generate_password_hash(upass, method='pbkdf2:sha256')
+                    cur.execute("""INSERT INTO users (username, email, password, is_admin, tracking_consent, role, subsidiary, created_at, updated_at)
+                                   VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)""",
+                                (uname, uemail, hashed_pw, is_adm, urole, usub, now_dt, now_dt))
+            except Exception as user_seed_err:
+                logger.warning(f"Could not seed demo user {uname}: {user_seed_err}")
+        conn.commit()
 
         # Coal Mining Governance & Compliance Platform Core Tables
         conn.execute("""CREATE TABLE IF NOT EXISTS mines (
@@ -1348,21 +1355,31 @@ def init_db():
 
     logger.info("✅ Database indexes setup complete.")
     
-    # Seed admin user
-    existing_admin = db.users.find_one({'username': 'admin'})
-    if not existing_admin:
-        admin_id = _next_id('users')
-        admin_password = generate_password_hash('admin123', method='pbkdf2:sha256')
-        db.users.insert_one({
-            'id': admin_id,
-            'username': 'admin',
-            'email': 'admin@complaint.com',
-            'password': admin_password,
-            'is_admin': True,
-            'tracking_consent': False,
-            'created_at': datetime.now()
-        })
-        logger.info("✅ Default admin user created")
+    # Seed default demo users
+    demo_accounts = [
+        ('admin', 'admin@mineguard.gov.in', 'admin123', True, 'Admin', 'Coal India HQ'),
+        ('manager', 'manager@mineguard.gov.in', 'manager123', True, 'Mine Manager', 'SECL'),
+        ('safety', 'safety@mineguard.gov.in', 'safety123', True, 'Safety Officer', 'SECL'),
+        ('inspector', 'inspector@dgms.gov.in', 'inspector123', True, 'Inspector', 'DGMS'),
+        ('worker', 'worker@mineguard.gov.in', 'worker123', False, 'Worker', 'SECL'),
+    ]
+    for uname, uemail, upass, is_adm, urole, usub in demo_accounts:
+        existing_user = db.users.find_one({'$or': [{'username': uname}, {'email': uemail}]})
+        if not existing_user:
+            u_id = _next_id('users')
+            u_pw = generate_password_hash(upass, method='pbkdf2:sha256')
+            db.users.insert_one({
+                'id': u_id,
+                'username': uname,
+                'email': uemail,
+                'password': u_pw,
+                'is_admin': is_adm,
+                'role': urole,
+                'subsidiary': usub,
+                'tracking_consent': False,
+                'created_at': datetime.now()
+            })
+            logger.info(f"✅ Demo user {uname} ({urole}) created")
     
     # Seed workers
     if db.workers.count_documents({}) == 0:
