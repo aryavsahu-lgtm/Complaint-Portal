@@ -132,14 +132,7 @@
 
                     <!-- Right: Ministry of Coal Emblem & Digital India Badge -->
                     <div class="d-none d-md-flex align-items-center gap-3">
-                        <div class="d-flex flex-column text-end">
-                            <span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1 fw-bold" style="font-size: 0.72rem;">
-                                <i class="bi bi-shield-check me-1"></i>{{ t.dgms_certified }}
-                            </span>
-                            <small class="text-muted fw-semibold mt-1" style="font-size: 0.7rem;">
-                                {{ t.zero_harm }}
-                            </small>
-                        </div>
+
                         <img src="{{ url_for('static', filename='images/ministry_of_coal_logo.svg') }}"
                             alt="Ministry of Coal Seal" style="height: 48px; width: auto; object-fit: contain;">
                         <img src="{{ url_for('static', filename='images/digital_india_logo.svg') }}"
@@ -655,6 +648,11 @@
         }
     </script>
     <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
+    <!-- Vercel Speed Insights -->
+    <script>
+        window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+    </script>
+    <script defer src="/_vercel/speed-insights/script.js"></script>
 
     {% block extra_js %}{% endblock %}
 </body>
