@@ -372,7 +372,7 @@ h3,
 .btn-primary {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
-    color: white;
+    color: #ffffff !important;
     padding: 0.6rem 1.5rem;
     font-weight: 500;
     border-radius: 4px;
@@ -382,10 +382,18 @@ h3,
     letter-spacing: 0.5px;
 }
 
-.btn-primary:hover {
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
     background-color: #001633;
     border-color: #001633;
+    color: #ffffff !important;
     transform: translateY(-1px);
+}
+
+.btn-primary *,
+.btn-primary i {
+    color: #ffffff !important;
 }
 
 .btn-outline-primary {
@@ -664,6 +672,10 @@ h3,
     padding: 0.5em 0.9em;
 }
 
+.badge.bg-dark {
+    color: #ffffff !important;
+}
+
 /* Fix container alignment */
 .container {
     max-width: 1200px;
@@ -730,8 +742,8 @@ small {
     line-height: 1.6;
 }
 
-/* Ensure proper text color in all card contexts */
-.card .bg-white * {
+/* Ensure proper text color in all card contexts (exclude buttons, badges, and their icons/text) */
+.card .bg-white *:not(.btn):not(.btn *):not(.badge):not(.badge *) {
     color: inherit;
 }
 
