@@ -32,7 +32,7 @@
     /* Changed from fixed to allow page centering */
     border: 1px solid rgba(0, 51, 102, 0.1);
     animation: slideUp 0.4s ease-out;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Noto Sans', 'Lato', Arial, sans-serif;
     margin: 0 auto;
 }
 

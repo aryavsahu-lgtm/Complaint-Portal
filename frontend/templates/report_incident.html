@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Report Incident - MineGuard{% endblock %}
+
+{% block content %}
+<div class="container py-4 py-md-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8 col-xl-7">
+
+            <!-- Clean, Minimal Header -->
+            <div class="text-center mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-danger-subtle text-danger mb-2" style="width: 56px; height: 56px;">
+                    <i class="bi bi-pencil-square fs-3"></i>
+                </div>
+                <h2 class="fw-bold text-dark mb-1" style="font-family: 'Noto Sans', 'Lato', Arial, sans-serif; letter-spacing: -0.5px;">
+                    Report an Incident
+                </h2>
+                <p class="text-muted small mb-0">
+                    Direct access &bull; No login required &bull; 100% Whistleblower protected
+                </p>
+            </div>
+
+            <!-- Success Card (Displayed if submitted_ref exists) -->
+            {% if submitted_ref %}
+            <div class="card border-0 shadow-sm rounded-4 mb-4 text-center p-4 border-top border-4 border-success" style="background: #f0fdf4;">
+                <div class="rounded-circle bg-success text-white mx-auto mb-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                    <i class="bi bi-check-lg fs-3"></i>
+                </div>
+                <h4 class="fw-bold text-dark mb-1">Incident Report Transmitted</h4>
+                <p class="text-muted small mb-3">Your report has been logged and forwarded to the safety control room.</p>
+                
+                <div class="p-3 bg-white rounded-3 border d-inline-flex align-items-center justify-content-center gap-3 mx-auto mb-3">
+                    <span class="text-muted small fw-bold text-uppercase">Reference:</span>
+                    <strong class="text-primary fs-5">{{ submitted_ref }}</strong>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2.5" 
+                            onclick="navigator.clipboard.writeText('{{ submitted_ref }}'); alert('Reference number copied!');" title="Copy">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                </div>
+
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{{ url_for('complaints.track_complaint', ref_no=submitted_ref) }}" class="btn btn-primary rounded-pill px-4 btn-sm fw-semibold">
+                        <i class="bi bi-search me-1"></i> Track Live Status
+                    </a>
+                    <a href="{{ url_for('complaints.report_incident') }}" class="btn btn-outline-secondary rounded-pill px-3 btn-sm">
+                        File Another
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Main Clean Form Card -->
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden" style="border: 1px solid #e2e8f0 !important;">
+                <div class="card-body p-4 p-md-5">
+                    <form method="POST" action="{{ url_for('complaints.report_incident') }}" enctype="multipart/form-data" id="minimalIncidentForm">
+                        
+                        <!-- 1. Incident Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label fw-bold text-dark small mb-1">
+                                What happened? <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control form-control-lg rounded-3 fs-6" id="title" name="title" 
+                                   placeholder="e.g. Gas odor detected, Roof crack in Panel 3, Conveyor belt issue" required>
+                        </div>
+
+                        <!-- 2. Category & Severity in one clean row -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-7">
+                                <label for="category" class="form-label fw-bold text-dark small mb-1">
+                                    Category <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select rounded-3 fs-6" id="category" name="category" required>
+                                    <option value="Strata & Roof Fall Risk">🪨 Strata & Roof Fall Risk</option>
+                                    <option value="Gas & Ventilation Danger">💨 Gas & Ventilation Danger</option>
+                                    <option value="HEMM & Machinery Incident">🚜 HEMM & Machinery Incident</option>
+                                    <option value="Inundation & Water Danger">🌊 Inundation & Water Inflow</option>
+                                    <option value="Spontaneous Heating & Fire">🔥 Spontaneous Heating & Fire</option>
+                                    <option value="Electrical & Substation Hazard">⚡ Electrical & Substation</option>
+                                    <option value="Environmental & Dust Hazard">🌿 Environmental Dust & Air</option>
+                                    <option value="Worker Safety Gear & Welfare">🦺 Worker Safety Gear & Welfare</option>
+                                    <option value="General Safety">⚠️ General Mining Safety Issue</option>
+                                </select>
+                            </div>
+
+                            <div class="col-sm-5">
+                                <label class="form-label fw-bold text-dark small mb-1">
+                                    Urgency <span class="text-danger">*</span>
+                                </label>
+                                <div class="d-flex gap-1">
+                                    <input type="radio" class="btn-check" name="severity" id="sev-low" value="Low" autocomplete="off">
+                                    <label class="btn btn-outline-secondary btn-sm flex-fill rounded-2 py-2" for="sev-low">Low</label>
+
+                                    <input type="radio" class="btn-check" name="severity" id="sev-med" value="Medium" autocomplete="off" checked>
+                                    <label class="btn btn-outline-primary btn-sm flex-fill rounded-2 py-2" for="sev-med">Med</label>
+
+                                    <input type="radio" class="btn-check" name="severity" id="sev-high" value="High" autocomplete="off">
+                                    <label class="btn btn-outline-warning btn-sm flex-fill rounded-2 py-2 text-dark" for="sev-high">High</label>
+
+                                    <input type="radio" class="btn-check" name="severity" id="sev-crit" value="Critical" autocomplete="off">
+                                    <label class="btn btn-outline-danger btn-sm flex-fill rounded-2 py-2" for="sev-crit">SOS</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Detailed Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label fw-bold text-dark small mb-1">
+                                Details & Observations <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control rounded-3 fs-6" id="description" name="description" rows="3" 
+                                      placeholder="Provide details of location, equipment, or any immediate danger..." required></textarea>
+                        </div>
+
+                        <!-- 4. Location & Colliery -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-sm-6">
+                                <label for="mine_id" class="form-label fw-bold text-dark small mb-1">Colliery / Mine (Optional)</label>
+                                <select class="form-select form-select-sm rounded-2" id="mine_id" name="mine_id">
+                                    <option value="">-- Select Colliery --</option>
+                                    {% for m in mines %}
+                                    <option value="{{ m.id }}">{{ m.name }} ({{ m.subsidiary }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label for="location" class="form-label fw-bold text-dark small mb-0">Pit Zone / Landmark <span class="text-danger">*</span></label>
+                                    <button type="button" class="btn btn-link btn-sm text-primary p-0 text-decoration-none" onclick="detectGPS();" style="font-size: 0.72rem;">
+                                        <i class="bi bi-crosshair"></i> Use GPS
+                                    </button>
+                                </div>
+                                <input type="text" class="form-control form-control-sm rounded-2" id="location" name="location" 
+                                       placeholder="e.g. Pit 3, North Incline, Haul Road" required>
+                            </div>
+                        </div>
+
+                        <!-- Hidden GPS Coordinates -->
+                        <input type="hidden" id="latitude" name="latitude">
+                        <input type="hidden" id="longitude" name="longitude">
+                        <input type="hidden" id="browser_lat" name="browser_lat">
+                        <input type="hidden" id="browser_lon" name="browser_lon">
+
+                        <div id="gps-status-badge" class="mb-3 d-none">
+                            <span class="badge bg-success-subtle text-success border border-success fw-normal py-1 px-2" id="gps-coordinates-text">
+                                GPS Location Acquired
+                            </span>
+                        </div>
+
+                        <!-- 5. Minimal Media Attachments (Photo & Voice Note) -->
+                        <div class="p-3 rounded-3 mb-3 bg-light border">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <span class="fw-bold small text-muted text-uppercase" style="font-size: 0.72rem;">Add Evidence (Optional)</span>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 bg-white" onclick="document.getElementById('attachment').click();">
+                                        <i class="bi bi-camera me-1"></i> Add Photo
+                                    </button>
+                                    <button type="button" id="record-btn" class="btn btn-sm btn-outline-primary rounded-pill px-3 bg-white">
+                                        <i class="bi bi-mic me-1"></i> Voice Note
+                                    </button>
+                                    <button type="button" id="stop-btn" class="btn btn-sm btn-danger rounded-pill px-3 d-none">
+                                        <i class="bi bi-stop-fill me-1"></i> Stop
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Hidden file input -->
+                            <input type="file" class="d-none" id="attachment" name="attachment" accept="image/*" onchange="previewImage(this)">
+
+                            <!-- Photo Preview -->
+                            <div id="image-preview-card" class="mt-2 d-none p-2 bg-white rounded-2 border d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2">
+                                    <img id="preview-img" src="" alt="Preview" style="width: 38px; height: 38px; object-fit: cover; border-radius: 4px;">
+                                    <span class="small text-truncate" id="preview-filename" style="max-width: 220px;">photo.jpg</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="clearImagePreview();">Remove</button>
+                            </div>
+
+                            <!-- Voice Visualizer & Playback -->
+                            <div id="visualizer-container" class="bg-white rounded-2 p-1.5 mt-2 d-none border">
+                                <canvas id="waveform" height="35" class="w-100"></canvas>
+                            </div>
+                            <div id="playback-container" class="mt-2 d-none">
+                                <div class="d-flex align-items-center gap-2 bg-white p-1.5 rounded-2 border">
+                                    <audio id="audio-playback" controls class="flex-grow-1" style="height: 32px;"></audio>
+                                    <button type="button" id="reset-record" class="btn btn-sm btn-link text-danger p-0" title="Delete voice note">Remove</button>
+                                </div>
+                            </div>
+                            <span id="voice-status" class="badge bg-light text-dark status-badge display-none mt-1"></span>
+                        </div>
+
+                        <!-- 6. Whistleblower / Anonymous Switch -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch d-flex align-items-center gap-2 p-0">
+                                <input class="form-check-input ms-0 me-2" type="checkbox" role="switch" id="anonSwitch" name="is_anonymous" value="1" checked onchange="toggleAnonMode();" style="cursor: pointer; width: 2.2em; height: 1.2em;">
+                                <label class="form-check-label small fw-semibold text-dark cursor-pointer" for="anonSwitch">
+                                    <i class="bi bi-shield-check text-success me-1"></i> Submit anonymously (Whistleblower protection)
+                                </label>
+                            </div>
+
+                            <!-- Optional Contact Info if switch untoggled -->
+                            <div id="contact-fields-container" class="mt-3 p-3 rounded-3 border bg-white d-none">
+                                <div class="row g-2">
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control form-control-sm" name="reporter_name" placeholder="Your Name (Optional)">
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <input type="tel" class="form-control form-control-sm" name="reporter_phone" placeholder="Mobile Number (for SMS updates)">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 7. Action Button -->
+                        <button type="submit" class="btn btn-danger btn-lg rounded-pill fw-bold shadow-sm w-100 py-2.5 fs-6" id="submitBtn">
+                            Submit Incident Report
+                        </button>
+
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('complaints.track_complaint') }}" class="text-muted small text-decoration-none hover-underline">
+                                Already reported? Track with Reference Number &rarr;
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+            <!-- Emergency Hotline Note -->
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    <i class="bi bi-telephone-fill text-danger me-1"></i> 24x7 Emergency Mine Safety Hotline: <strong>1800-120-MINES (64637)</strong> &bull; Toll Free
+                </small>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Audio Recorder & Client Scripts -->
+<script src="{{ url_for('static', filename='js/voice_input.js') }}"></script>
+<script>
+    function toggleAnonMode() {
+        const isAnon = document.getElementById('anonSwitch').checked;
+        const contactDiv = document.getElementById('contact-fields-container');
+        if (isAnon) {
+            contactDiv.classList.add('d-none');
+        } else {
+            contactDiv.classList.remove('d-none');
+        }
+    }
+
+    function detectGPS() {
+        const badge = document.getElementById('gps-status-badge');
+        const text = document.getElementById('gps-coordinates-text');
+        badge.classList.remove('d-none');
+        text.innerText = "Locating GPS...";
+
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(function(pos) {
+                const lat = pos.coords.latitude.toFixed(6);
+                const lon = pos.coords.longitude.toFixed(6);
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lon;
+                document.getElementById('browser_lat').value = lat;
+                document.getElementById('browser_lon').value = lon;
+                text.innerText = `GPS Fixed: ${lat}, ${lon}`;
+
+                const locInput = document.getElementById('location');
+                if (!locInput.value.trim()) {
+                    locInput.value = `GPS: ${lat}, ${lon}`;
+                }
+            }, function(err) {
+                text.innerText = "GPS unavailable";
+            }, { enableHighAccuracy: true, timeout: 8000 });
+        } else {
+            text.innerText = "Geolocation not supported";
+        }
+    }
+
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('preview-img').src = e.target.result;
+                document.getElementById('preview-filename').innerText = input.files[0].name;
+                document.getElementById('image-preview-card').classList.remove('d-none');
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function clearImagePreview() {
+        document.getElementById('attachment').value = '';
+        document.getElementById('image-preview-card').classList.add('d-none');
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof AudioRecorderModule !== 'undefined') {
+            new AudioRecorderModule({
+                recordBtnId: 'record-btn',
+                stopBtnId: 'stop-btn',
+                playbackId: 'audio-playback',
+                waveformId: 'waveform',
+                statusId: 'voice-status',
+                containerId: 'playback-container',
+                visualizerId: 'visualizer-container',
+                resetId: 'reset-record',
+                inputName: 'audio_file'
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -534,7 +534,7 @@ class GoogleMapsLocationViewer {
             // InfoWindow with Address & Directions
             const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}${this.config.placeId ? '&destination_place_id=' + encodeURIComponent(this.config.placeId) : ''}`;
             const infoContent = `
-                <div style="padding: 6px; font-family: sans-serif; max-width: 240px;">
+                <div style="padding: 6px; font-family: 'Noto Sans', 'Lato', Arial, sans-serif; max-width: 240px;">
                     <h6 style="margin: 0 0 4px 0; font-size: 14px; font-weight: bold; color: #003366;">${this.escapeHtml(this.config.title)}</h6>
                     <p style="margin: 0 0 8px 0; font-size: 12px; color: #555;">${this.escapeHtml(this.config.address || 'Exact Coordinates: ' + lat.toFixed(5) + ', ' + lng.toFixed(5))}</p>
                     <a href="${directionsUrl}" target="_blank" style="display: inline-block; padding: 4px 10px; font-size: 12px; background-color: #003366; color: white; border-radius: 4px; text-decoration: none; font-weight: 500;">

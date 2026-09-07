@@ -39,12 +39,21 @@
         <div class="col-md-6 col-lg-4">
             <div class="card h-100 border-0 shadow-sm card-hover-effect overflow-hidden rounded-4">
                 <div class="position-relative">
-                    {% if 'http' in dept.image %}
-                    <img src="{{ dept.image }}" class="card-img-top" style="height: 200px; object-fit: cover;"
+                    {% if dept.id == 'safety' %}
+                    <img src="{{ url_for('static', filename='images/mine_safety_strata.jpg') }}" class="card-img-top" style="height: 200px; object-fit: cover;"
                         alt="{{ t[name_key] }}">
+                    {% elif dept.id == 'environment' %}
+                    <img src="{{ url_for('static', filename='images/mine_environment_eco.jpg') }}" class="card-img-top" style="height: 200px; object-fit: cover;"
+                        alt="{{ t[name_key] }}">
+                    {% elif dept.id == 'welfare' %}
+                    <img src="{{ url_for('static', filename='images/mine_workers_welfare.jpg') }}" class="card-img-top" style="height: 200px; object-fit: cover;"
+                        alt="{{ t[name_key] }}">
+                    {% elif 'http' in dept.image %}
+                    <img src="{{ dept.image }}" class="card-img-top" style="height: 200px; object-fit: cover;"
+                        alt="{{ t[name_key] }}" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/mine_safety_strata.jpg') }}';">
                     {% else %}
                     <img src="{{ url_for('static', filename=dept.image) }}" class="card-img-top"
-                        style="height: 200px; object-fit: cover;" alt="{{ t[name_key] }}">
+                        style="height: 200px; object-fit: cover;" alt="{{ t[name_key] }}" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/mine_safety_strata.jpg') }}';">
                     {% endif %}
                     <div class="position-absolute top-0 end-0 p-3">
                         <span class="badge bg-white text-primary rounded-pill shadow-sm py-2 px-3">

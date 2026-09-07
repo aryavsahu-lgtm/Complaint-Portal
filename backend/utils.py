@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import session, flash, redirect, url_for
+from flask import session, flash, redirect, url_for, request
 
 import time
 import base64
@@ -31,16 +31,17 @@ request_history = {}
 def rate_limit(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        user_id = session.get('user_id', 'anonymous')
-        now = time.time()
-        
-        if user_id in request_history:
-            last_request = request_history[user_id]
-            if now - last_request < 1.0: # 1 request per second limit
-                 flash('Too many requests. Please slow down.', 'warning')
-                 return redirect(url_for('index'))
-                 
-        request_history[user_id] = now
+        if request.method == 'POST':
+            user_id = session.get('user_id') or request.remote_addr or 'anonymous'
+            now = time.time()
+            
+            if user_id in request_history:
+                last_request = request_history[user_id]
+                if now - last_request < 1.0: # 1 request per second limit
+                    flash('Too many requests. Please slow down.', 'warning')
+                    return redirect(url_for('index'))
+                     
+            request_history[user_id] = now
         return f(*args, **kwargs)
     return decorated_function
 

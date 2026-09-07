@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Gujarati:wght@400;600;700&family=Noto+Sans+Gurmukhi:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Malayalam:wght@400;600;700&family=Noto+Sans+Oriya:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&family=Playfair+Display:wght@700&family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700&family=Noto+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Noto+Sans+Gujarati:wght@400;600;700&family=Noto+Sans+Gurmukhi:wght@400;600;700&family=Noto+Sans+Kannada:wght@400;600;700&family=Noto+Sans+Malayalam:wght@400;600;700&family=Noto+Sans+Oriya:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
 
 html {
     scroll-behavior: smooth;
@@ -23,10 +23,11 @@ html {
     --saffron: #FF9933;
     --white: #FFFFFF;
     --green: #138808;
+    --font-sans: 'Noto Sans', 'Lato', Arial, sans-serif;
 }
 
 body {
-    font-family: 'Poppins', 'Mukta', 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Telugu', 'Noto Sans Tamil', 'Noto Sans Gujarati', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Oriya', 'Noto Sans Gurmukhi', sans-serif;
+    font-family: 'Noto Sans', 'Lato', Arial, 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Telugu', 'Noto Sans Tamil', 'Noto Sans Gujarati', 'Noto Sans Kannada', 'Noto Sans Malayalam', 'Noto Sans Oriya', 'Noto Sans Gurmukhi', sans-serif;
     background-color: var(--light-bg);
     color: var(--dark-text);
     min-height: 100vh;
@@ -35,16 +36,26 @@ body {
 }
 
 .hindi {
-    font-family: 'Mukta', sans-serif;
+    font-family: 'Noto Sans Devanagari', 'Noto Sans', 'Lato', Arial, sans-serif;
     font-weight: 500;
 }
 
 h1,
 h2,
 h3,
+h4,
+h5,
+h6,
 .navbar-brand {
-    font-family: 'Playfair Display', serif;
-    /* Serif font for headings for academic look */
+    font-family: 'Noto Sans', 'Lato', Arial, sans-serif;
+}
+
+button,
+input,
+select,
+textarea,
+optgroup {
+    font-family: inherit;
 }
 
 /* Add Top Bar */
@@ -279,12 +290,12 @@ h3,
 }
 
 .govt-name {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Noto Sans', 'Lato', Arial, sans-serif;
     letter-spacing: 2px;
 }
 
 .portal-name {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Noto Sans', 'Lato', Arial, sans-serif;
     letter-spacing: 0.5px;
 }
 
@@ -626,7 +637,7 @@ h3,
 
 /* Improve Hindi text visibility */
 .hindi {
-    font-family: 'Mukta', sans-serif;
+    font-family: 'Noto Sans Devanagari', 'Noto Sans', 'Lato', Arial, sans-serif;
     font-weight: 600;
     letter-spacing: 0.3px;
 }
@@ -993,4 +1004,465 @@ body {
 
 #google_translate_element {
     display: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODERN MINIMAL PORTAL DASHBOARD STYLES
+   ═══════════════════════════════════════════════════════════ */
+
+.portal-hero-compact {
+    position: relative;
+    background: linear-gradient(135deg, #002147 0%, #003666 50%, #004d8a 100%);
+    color: white;
+    padding: 2.75rem 0 3.25rem 0;
+    margin-bottom: 0;
+    border-bottom: 4px solid var(--accent-color);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+.portal-hero-compact::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.portal-hero-compact h1,
+.portal-hero-compact .hero-title {
+    font-family: 'Noto Sans', 'Lato', Arial, sans-serif !important;
+    font-weight: 800 !important;
+    font-size: clamp(1.65rem, 2.7vw, 2.75rem) !important;
+    line-height: 1.25 !important;
+    letter-spacing: -0.02em !important;
+}
+
+@media (min-width: 768px) {
+    .portal-hero-compact h1,
+    .portal-hero-compact .hero-title {
+        white-space: nowrap !important;
+    }
+}
+
+.portal-hero-compact .hero-subtitle-accent {
+    font-family: 'Noto Sans', 'Lato', Arial, sans-serif !important;
+    color: #fbbf24 !important;
+    font-weight: 700 !important;
+}
+
+/* High-Contrast Top Statutory Badge - Perfectly Fitted Inside Container */
+.portal-hero-compact .hero-top-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 9px 28px;
+    border-radius: 50px;
+    background-color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22) !important;
+    white-space: nowrap;
+    line-height: 1;
+}
+
+.portal-hero-compact .hero-top-badge i {
+    color: #d97706 !important;
+    font-size: 1.05rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+}
+
+.portal-hero-compact .hero-top-badge span {
+    color: #002b55 !important;
+    font-family: 'Noto Sans', 'Lato', Arial, sans-serif !important;
+    font-weight: 800 !important;
+    font-size: 0.88rem !important;
+    letter-spacing: 0.06em !important;
+    text-transform: uppercase;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Hero CTA Buttons - High Visibility & Perfect Contrast */
+.portal-hero-compact .btn-hero-incident {
+    background-color: #ffffff !important;
+    border: 2px solid #ffffff !important;
+    color: #002b55 !important;
+    font-weight: 700 !important;
+    font-size: 1.02rem;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.portal-hero-compact .btn-hero-incident:hover,
+.portal-hero-compact .btn-hero-incident:focus {
+    background-color: #f1f5f9 !important;
+    border-color: #f1f5f9 !important;
+    color: #001a35 !important;
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+.portal-hero-compact .btn-hero-track {
+    background-color: #0284c7 !important;
+    border: 2px solid #38bdf8 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    font-size: 1.02rem;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 18px rgba(2, 132, 199, 0.45) !important;
+    transition: all 0.2s ease;
+}
+
+.portal-hero-compact .btn-hero-track:hover,
+.portal-hero-compact .btn-hero-track:focus {
+    background-color: #0369a1 !important;
+    border-color: #7dd3fc !important;
+    color: #ffffff !important;
+    box-shadow: 0 6px 24px rgba(2, 132, 199, 0.6) !important;
+    transform: translateY(-2px);
+}
+
+.portal-hero-compact .btn-hero-ai {
+    background-color: #f59e0b !important;
+    border: 2px solid #fbbf24 !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    font-size: 1.02rem;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 18px rgba(245, 158, 11, 0.4) !important;
+    transition: all 0.2s ease;
+}
+
+.portal-hero-compact .btn-hero-ai:hover,
+.portal-hero-compact .btn-hero-ai:focus {
+    background-color: #d97706 !important;
+    border-color: #f59e0b !important;
+    color: #0f172a !important;
+    box-shadow: 0 6px 24px rgba(245, 158, 11, 0.55) !important;
+    transform: translateY(-2px);
+}
+
+.portal-hero-compact .hero-auth-pill {
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50px;
+    padding: 9px 28px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 0.95rem;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    max-width: 95%;
+    line-height: 1.4;
+}
+
+.portal-main-canvas {
+    background-color: #f8fafc;
+    padding: 2.5rem 0 4.5rem 0;
+    min-height: calc(100vh - 400px);
+}
+
+/* Metric KPI Bar */
+.portal-kpi-bar {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.portal-kpi-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.portal-kpi-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+}
+
+/* Unified Surface Cards */
+.portal-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    overflow: hidden;
+}
+
+.portal-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+    transform: translateY(-2px);
+}
+
+.portal-card-header {
+    padding: 1rem 1.25rem;
+    background-color: #ffffff;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.portal-card-body {
+    padding: 1.25rem;
+}
+
+.portal-card-footer {
+    padding: 0.85rem 1.25rem;
+    background-color: #f8fafc;
+    border-top: 1px solid #f1f5f9;
+}
+
+/* Clean List Item Rows */
+.portal-list-row {
+    padding: 0.75rem 0.5rem;
+    border-radius: 8px;
+    transition: background-color 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.portal-list-row:hover {
+    background-color: #f8fafc;
+}
+
+.portal-list-row + .portal-list-row {
+    border-top: 1px solid #f1f5f9;
+}
+
+/* Refined Pastel Status Badges */
+.portal-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.28rem 0.65rem;
+    border-radius: 20px;
+    line-height: 1.2;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.portal-badge-active {
+    background-color: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
+}
+
+.portal-badge-critical {
+    background-color: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+}
+
+.portal-badge-ongoing {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #dbeafe;
+}
+
+.portal-badge-completed {
+    background-color: #f0fdfa;
+    color: #0f766e;
+    border: 1px solid #ccfbf1;
+}
+
+.portal-badge-phase {
+    background-color: #f5f3ff;
+    color: #6d28d9;
+    border: 1px solid #ddd6fe;
+}
+
+/* AI Suite Feature Card */
+.portal-ai-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    transition: all 0.2s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.portal-ai-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+    transform: translateY(-2px);
+}
+
+.portal-icon-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    margin-bottom: 0.85rem;
+    flex-shrink: 0;
+}
+
+/* Media Cards */
+.portal-media-header {
+    height: 160px;
+    position: relative;
+    overflow: hidden;
+}
+
+.portal-media-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.portal-card:hover .portal-media-img {
+    transform: scale(1.03);
+}
+
+.portal-media-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Sleek Interactive AI Suite Tiles */
+.portal-ai-tile {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.15rem 1.25rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
+    cursor: pointer;
+}
+
+.portal-ai-tile:hover {
+    border-color: #93c5fd;
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.08);
+    transform: translateY(-2px);
+}
+
+.portal-ai-tile-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+}
+
+.portal-ai-tile:hover .portal-ai-tile-icon {
+    transform: scale(1.08);
+}
+
+.portal-ai-tile-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #0f172a;
+    transition: color 0.15s ease;
+}
+
+.portal-ai-tile:hover .portal-ai-tile-title {
+    color: #2563eb;
+}
+
+.portal-ai-tile-desc {
+    font-size: 0.775rem;
+    color: #64748b;
+    line-height: 1.45;
+    margin-top: 0.25rem;
+}
+
+.portal-ai-tile-arrow {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.portal-ai-tile:hover .portal-ai-tile-arrow {
+    color: #2563eb;
+    transform: translate(2px, -2px);
+}
+
+/* Minimal Crypto Audit Row */
+.portal-audit-row {
+    padding: 0.75rem 0.85rem;
+    border-radius: 8px;
+    background-color: #f8fafc;
+    border: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    transition: all 0.15s ease;
+    margin-bottom: 0.5rem;
+}
+
+.portal-audit-row:hover {
+    background-color: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+}
+
+.portal-audit-row:last-child {
+    margin-bottom: 0;
+}
+
+.portal-crypto-block {
+    padding: 0.85rem 1rem;
+    background-color: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    border-left-width: 4px;
+    margin-bottom: 0.75rem;
+    transition: all 0.15s ease;
+}
+
+.portal-crypto-block:hover {
+    background-color: #ffffff;
+    border-color: #cbd5e1;
+}
+
+.portal-crypto-block:last-child {
+    margin-bottom: 0;
 }
