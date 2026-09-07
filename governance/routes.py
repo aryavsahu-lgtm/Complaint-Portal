@@ -93,7 +93,9 @@ def download_report():
     }
     
     report_filename = f"Compliance_Report_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-    report_path = os.path.join(current_app.config.get('UPLOAD_FOLDER', '/tmp'), report_filename)
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', '/tmp')
+    os.makedirs(upload_folder, exist_ok=True)
+    report_path = os.path.join(upload_folder, report_filename)
     
     try:
         generate_compliance_report(data, report_path)
@@ -353,7 +355,9 @@ def field_inspection():
             file = request.files['photo_evidence']
             if file and file.filename:
                 fname = secure_filename(f"insp_{uuid.uuid4().hex[:8]}_{file.filename}")
-                upload_path = os.path.join(os.getcwd(), 'static', 'uploads', fname)
+                upload_folder = current_app.config.get('UPLOAD_FOLDER', os.path.join(os.getcwd(), 'frontend', 'static', 'uploads'))
+                os.makedirs(upload_folder, exist_ok=True)
+                upload_path = os.path.join(upload_folder, fname)
                 file.save(upload_path)
                 photo_filename = fname
                 # Authenticity check
