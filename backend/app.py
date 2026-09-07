@@ -183,6 +183,13 @@ def handle_connect():
         join_room('citizens')
 
 if __name__ == '__main__':
+    # Initialize background tasks
+    try:
+        from tasks import start_scheduler
+        start_scheduler()
+    except Exception as e:
+        print(f"Failed to start scheduler: {e}")
+        
     # Initialize DB (create tables if not exist)
     with app.app_context():
         init_db()

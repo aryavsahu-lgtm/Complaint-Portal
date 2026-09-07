@@ -20,7 +20,16 @@ from ai_engine.crypto_audit import CryptoAuditLedger
 from ai_engine.statutory_bot import StatutoryBotEngine
 from ai_engine.authenticity_engine import analyze_image_authenticity
 from . import governance_bp
+import sys
+import os
+from flask import send_file
 
+# Add parent directory to path so we can import report_generator
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    from report_generator import generate_compliance_report
+except ImportError:
+    pass
 
 def _record_crypto_audit(actor_name: str, action_type: str, entity: str, details: str, payload: dict = None):
     """Helper to record an immutable SHA-256 block into the audit ledger."""
@@ -51,6 +60,47 @@ def _record_crypto_audit(actor_name: str, action_type: str, entity: str, details
     except Exception as e:
         print(f"[CryptoAudit Error] Failed to write block: {e}")
 
+
+# ==========================================
+# REPORT GENERATION (AUTO-REPORTS)
+# ==========================================
+@governance_bp.route('/download_report')
+@login_required
+def download_report():
+    db = get_db()
+    
+    # Fetch latest high risk violations
+    violations = [dict(row) for row in db.execute("""
+        SELECT fi.*, m.name as mine_name 
+        FROM field_inspections fi 
+        LEFT JOIN mines m ON fi.mine_id = m.id 
+        WHERE fi.status != 'Resolved' AND fi.risk_level IN ('Critical', 'High')
+        ORDER BY fi.created_at DESC LIMIT 10
+    """).fetchall()]
+    
+    # Fetch recent escalations from complaints
+    escalations = [dict(row) for row in db.execute("""
+        SELECT id, title, updated_at, status 
+        FROM complaints 
+        WHERE is_escalated = 1 AND status != 'Resolved'
+        ORDER BY updated_at DESC LIMIT 10
+    """).fetchall()]
+    
+    data = {
+        'report_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'violations': violations,
+        'escalations': escalations
+    }
+    
+    report_filename = f"Compliance_Report_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+    report_path = os.path.join(current_app.config.get('UPLOAD_FOLDER', '/tmp'), report_filename)
+    
+    try:
+        generate_compliance_report(data, report_path)
+        return send_file(report_path, as_attachment=True)
+    except Exception as e:
+        flash(f"Failed to generate report: {e}", "danger")
+        return redirect(url_for('governance.safety_dashboard'))
 
 # ==========================================
 # 1. CENTRAL GOVERNANCE COMMAND DASHBOARD
@@ -782,6 +832,22 @@ def safety_dashboard():
     open_capas_count = sum(1 for c in capas if c.get('status') != 'Closed')
     active_hazard_count = len(telemetry_breaches)
 
+    # ---------------------------------------------
+    # PHASE 2: Spotting Risky Areas (Pandas)
+    # ---------------------------------------------
+    hotspots = []
+    try:
+        import pandas as pd
+        if violations:
+            df = pd.DataFrame(violations)
+            # Group by mine and location to count violations
+            risk_counts = df.groupby(['mine_name', 'location_pit_seam']).size().reset_index(name='count')
+            # Sort by count descending to find hotspots
+            risk_counts = risk_counts.sort_values('count', ascending=False).head(5)
+            hotspots = risk_counts.to_dict('records')
+    except Exception as e:
+        print(f"Hotspot calculation failed: {e}")
+
     return render_template('safety_officer_dashboard.html',
                            mines=mines,
                            violations=violations,
@@ -793,6 +859,7 @@ def safety_dashboard():
                            high_violations=high_violations,
                            open_capas_count=open_capas_count,
                            active_hazard_count=active_hazard_count,
+                           hotspots=hotspots,
                            filter_mine=filter_mine)
 
 

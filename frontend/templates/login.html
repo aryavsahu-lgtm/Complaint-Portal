@@ -51,6 +51,14 @@
 </style>
 {% endblock %}
 
+{% block navbar_override %}
+<div class="bg-white border-bottom shadow-sm px-3 py-2 w-100 d-flex justify-content-start">
+    <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 fw-bold" style="border-radius: 6px;">
+        <i class="bi bi-arrow-left"></i> Back
+    </a>
+</div>
+{% endblock navbar_override %}
+
 {% block content %}
 <div class="auth-page-wrapper">
     <div class="auth-container-box">

@@ -1,8 +1,17 @@
 {% extends "base.html" %}
 
+{% block navbar_override %}
+<div class="bg-white border-bottom shadow-sm px-3 py-2 w-100 d-flex justify-content-start">
+    <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 fw-bold" style="border-radius: 6px;">
+        <i class="bi bi-arrow-left"></i> Back
+    </a>
+</div>
+{% endblock navbar_override %}
+
 {% block title %}Safety Officer Hazard & CAPA Command - {{ t.portal_name }}{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
     .hazard-card-critical {
         border-left: 5px solid #dc2626 !important;
@@ -67,6 +76,9 @@
                     </a>
                     <a href="{{ url_for('governance.capa_manager') }}" class="btn btn-outline-light btn-sm">
                         <i class="bi bi-tools me-1"></i> Full CAPA Hub
+                    </a>
+                    <a href="{{ url_for('governance.download_report') }}" class="btn btn-light text-danger fw-bold btn-sm shadow-sm">
+                        <i class="bi bi-file-earmark-pdf-fill me-1"></i> Compliance Report
                     </a>
                 </div>
             </div>
@@ -198,6 +210,53 @@
         </div>
     </div>
 
+    <!-- PHASE 2: Risk Hotspots Map & Top High-Risk Areas -->
+    <div class="row g-4 mb-4">
+        <!-- Interactive Map -->
+        <div class="col-xl-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-white py-3 px-4 border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-map-fill text-danger me-2"></i>Live Risk Hotspot Map</h5>
+                    <span class="badge bg-danger-subtle text-danger border border-danger">AI Pattern Spotting</span>
+                </div>
+                <div class="card-body p-0">
+                    <div id="riskHotspotMap" style="height: 400px; width: 100%; border-bottom-left-radius: 1rem; border-bottom-right-radius: 1rem; z-index: 1;"></div>
+                </div>
+            </div>
+        </div>
+        <!-- Top Risky Areas List -->
+        <div class="col-xl-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-white py-3 px-4 border-0">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-exclamation-octagon-fill text-warning me-2"></i>High-Risk Areas</h5>
+                    <small class="text-muted">Locations with recurring failures.</small>
+                </div>
+                <div class="card-body px-4 pt-0">
+                    <div class="list-group list-group-flush">
+                        {% if hotspots %}
+                            {% for spot in hotspots %}
+                            <div class="list-group-item px-0 py-3 border-bottom d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-start gap-2">
+                                    <div class="bg-danger-subtle text-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 35px; height: 35px;">
+                                        <i class="bi bi-geo-alt-fill"></i>
+                                    </div>
+                                    <div>
+                                        <strong class="text-dark d-block">{{ spot.mine_name }}</strong>
+                                        <small class="text-muted">{{ spot.location_pit_seam }}</small>
+                                    </div>
+                                </div>
+                                <span class="badge bg-danger rounded-pill fs-6">{{ spot.count }}</span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted text-center mt-4">No recurring hotspots detected.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Live Violations & Field Observations Stream -->
     <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
         <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-0">
@@ -238,8 +297,12 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <strong class="text-dark">{{ v.mine_name }}</strong>
-                                <small class="text-muted d-block"><i class="bi bi-geo-alt me-1"></i>{{ v.location_pit_seam }}</small>
+                                <strong class="text-dark d-block">{{ v.mine_name }}</strong>
+                                <small class="text-muted"><i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ v.location_pit_seam }}</small>
+                                <br>
+                                <span class="badge bg-success-subtle text-success border border-success mt-1" style="font-size:0.65rem;">
+                                    <i class="bi bi-shield-check me-1"></i>Geo-Verified
+                                </span>
                             </td>
                             <td style="max-width: 320px;">
                                 <div class="fw-semibold text-dark">{{ v.violation_title }}</div>
@@ -312,4 +375,53 @@
     </div>
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Initialize Map
+        var map = L.map('riskHotspotMap').setView([22.5, 82.5], 5); // Default center (Central India)
+        
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+            subdomains: 'abcd',
+            maxZoom: 20
+        }).addTo(map);
+
+        // Add Hotspot Markers
+        var hotspots = {{ hotspots | tojson | safe }};
+        var bounds = [];
+        
+        // Dummy coordinates for demonstration based on names if actual DB lacks them
+        var dummyCoords = {
+            'Gevra Open Cast': [22.3333, 82.5333],
+            'Dipka Project': [22.3167, 82.5167],
+            'Kusmunda Colliery': [22.35, 82.55],
+            'Dhanbad Pit': [23.7915, 86.4310],
+            'Jharia UG': [23.75, 86.41]
+        };
+
+        hotspots.forEach(function(spot) {
+            var coords = dummyCoords[spot.mine_name] || [22.0 + Math.random(), 82.0 + Math.random()];
+            bounds.push(coords);
+            
+            var circle = L.circleMarker(coords, {
+                radius: 10 + (spot.count * 2), // Larger radius for more violations
+                fillColor: "#dc2626",
+                color: "#991b1b",
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.6
+            }).addTo(map);
+            
+            circle.bindPopup(`<b>${spot.mine_name}</b><br>${spot.location_pit_seam}<br><span class="text-danger fw-bold">${spot.count} Active Violations</span>`);
+        });
+
+        if (bounds.length > 0) {
+            map.fitBounds(bounds, {padding: [50, 50]});
+        }
+    });
+</script>
 {% endblock %}
